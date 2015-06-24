@@ -19,6 +19,9 @@ if contents == nil {
 }
 
 let roostfile = Roostfile()
+roostfile.directory = cwd
 roostfile.parseFromString(contents! as String)
 
 roostfile.inspect()
+
+let package = Package(roostfile)

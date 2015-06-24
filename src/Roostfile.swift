@@ -6,6 +6,7 @@ private let whitespaceAndNewlineCharacterSet = NSCharacterSet.whitespaceAndNewli
 
 class Roostfile {
   var name: String!
+  var directory: String!
   var sources: [String] = []
 
   func parseFromString(string: String) {
@@ -36,7 +37,7 @@ class Roostfile {
 
       for (command, action) in map {
         if scanner.scanString(command, intoString: nil) {
-          action(scanner, lineNumber: lineNumber)
+          action(scanner, lineNumber)
           break
         }
       }
@@ -48,7 +49,7 @@ class Roostfile {
     }
   }
 
-  func parseName(scanner: NSScanner, lineNumber: Int) {
+  func parseName(scanner: NSScanner, _ lineNumber: Int) {
     let token = scanWord(scanner)
 
     if token == nil {
@@ -58,13 +59,18 @@ class Roostfile {
     let name = token!
   }
 
-  func parseSources(scanner: NSScanner, lineNumber: Int) {
+  func parseSources(scanner: NSScanner, _ lineNumber: Int) {
     sources = scanWords(scanner)
 
     if sources.count == 0 {
       println("Must have at least one source in sources on line \(lineNumber)")
       exit(1)
     }
+  }
+
+  func validate() {
+    // TODO: Implement some validations
+    return
   }
 
   func inspect() {
