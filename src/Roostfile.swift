@@ -2,7 +2,8 @@ import Foundation
 
 private let commentToken = "#"
 private let whitespaceCharacterSet = NSCharacterSet.whitespaceCharacterSet()
-private let whitespaceAndNewlineCharacterSet = NSCharacterSet.whitespaceAndNewlineCharacterSet()
+
+let WhitespaceAndNewlineCharacterSet = NSCharacterSet.whitespaceAndNewlineCharacterSet()
 
 class Roostfile {
   var name: String!
@@ -56,7 +57,7 @@ class Roostfile {
       println("Missing name on line \(lineNumber)")
       exit(1)
     }
-    let name = token!
+    name = token!
   }
 
   func parseSources(scanner: NSScanner, _ lineNumber: Int) {
@@ -81,7 +82,7 @@ class Roostfile {
 
   private func scanWord(scanner: NSScanner) -> String? {
     var token: NSString?
-    let scanned = scanner.scanUpToCharactersFromSet(whitespaceAndNewlineCharacterSet, intoString: &token)
+    let scanned = scanner.scanUpToCharactersFromSet(WhitespaceAndNewlineCharacterSet, intoString: &token)
 
     return scanned ? (token as String?) : nil
   }

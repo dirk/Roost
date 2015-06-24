@@ -22,6 +22,8 @@ let roostfile = Roostfile()
 roostfile.directory = cwd
 roostfile.parseFromString(contents! as String)
 
-roostfile.inspect()
+// roostfile.inspect()
 
 let package = Package(roostfile)
+
+package.compile()
