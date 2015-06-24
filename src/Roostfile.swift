@@ -34,9 +34,10 @@ class Roostfile {
       for (command, action) in map {
         if scanner.scanString(command, intoString: nil) {
           action(scanner)
-          return
+          break
         }
       }
+      if scanner.atEnd { return }
 
       let token = self.scanWord(scanner)
       println("Unrecognized token '\(token!)' on line \(lineNumber)")
