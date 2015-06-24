@@ -21,3 +21,4 @@ if contents == nil {
 let roostfile = Roostfile()
 roostfile.parseFromString(contents! as String)
 
+roostfile.inspect()

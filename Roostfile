@@ -2,3 +2,4 @@
   # This is an indented comment
 
 name Roost
+sources src/

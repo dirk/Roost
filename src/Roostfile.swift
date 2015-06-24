@@ -1,10 +1,12 @@
 import Foundation
 
-class Roostfile {
-  let commentToken = "#"
+private let commentToken = "#"
+private let whitespaceCharacterSet = NSCharacterSet.whitespaceCharacterSet()
+private let whitespaceAndNewlineCharacterSet = NSCharacterSet.whitespaceAndNewlineCharacterSet()
 
-  let whitespaceCharacterSet = NSCharacterSet.whitespaceCharacterSet()
-  let whitespaceAndNewlineCharacterSet = NSCharacterSet.whitespaceAndNewlineCharacterSet()
+class Roostfile {
+  var name: String!
+  var sources: [String] = []
 
   func parseFromString(string: String) {
     let stringAsNSString = string as NSString
@@ -14,14 +16,15 @@ class Roostfile {
     stringAsNSString.enumerateLinesUsingBlock { (line, stop) in
       // Map names to processors
       let map = [
-        "name": { self.parseName($0, lineNumber: lineNumber) }
+        "name": self.parseName,
+        "sources": self.parseSources
       ]
 
       let scanner = NSScanner(string: line)
       lineNumber += 1
 
       // Skip lines beginning with a comment
-      if scanner.scanString(self.commentToken, intoString: nil) {
+      if scanner.scanString(commentToken, intoString: nil) {
         return
       }
       // Skip all whitespace
@@ -33,7 +36,7 @@ class Roostfile {
 
       for (command, action) in map {
         if scanner.scanString(command, intoString: nil) {
-          action(scanner)
+          action(scanner, lineNumber: lineNumber)
           break
         }
       }
@@ -53,15 +56,42 @@ class Roostfile {
       exit(1)
     }
     let name = token!
-
-    println("name \(name)")
   }
+
+  func parseSources(scanner: NSScanner, lineNumber: Int) {
+    sources = scanWords(scanner)
+
+    if sources.count == 0 {
+      println("Must have at least one source in sources on line \(lineNumber)")
+      exit(1)
+    }
+  }
+
+  func inspect() {
+    println("name \(name)")
+    println("sources \(sources)")
+  }
+
 
   private func scanWord(scanner: NSScanner) -> String? {
     var token: NSString?
     let scanned = scanner.scanUpToCharactersFromSet(whitespaceAndNewlineCharacterSet, intoString: &token)
 
     return scanned ? (token as String?) : nil
+  }
+
+  private func scanWords(scanner: NSScanner) -> [String] {
+    var words: [String] = []
+
+    while true {
+      let word = scanWord(scanner)
+
+      if word == nil { break }
+
+      words.append(word!)
+    }
+
+    return words
   }
 
   private func consumeWhitespace(scanner: NSScanner) -> Bool {
