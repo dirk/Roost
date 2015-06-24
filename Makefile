@@ -1,6 +1,6 @@
 SWIFTC=swiftc -sdk $(shell xcrun --show-sdk-path)
 
-bin/roost: src/*.swift
+bin/roost: Roost/*.swift
 	$(SWIFTC) $^ -o $@
 
 .PHONY: clean
