@@ -1,4 +1,5 @@
 import Foundation
+import Tasker
 
 class Package {
   var roostfile: Roostfile
