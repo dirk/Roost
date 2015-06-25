@@ -1,8 +1,8 @@
 import Foundation
 
 private let commentToken = "#"
-private let whitespaceCharacterSet = NSCharacterSet.whitespaceCharacterSet()
 
+let WhitespaceCharacterSet = NSCharacterSet.whitespaceCharacterSet()
 let WhitespaceAndNewlineCharacterSet = NSCharacterSet.whitespaceAndNewlineCharacterSet()
 
 class Roostfile {
@@ -11,17 +11,49 @@ class Roostfile {
   var sources: [String] = []
 
   func parseFromString(string: String) {
+    // Map names to processors
+    let map = [
+      "name":    self.parseName,
+      "sources": self.parseSources,
+      "module":  self.parseModule
+    ]
+
     let stringAsNSString = string as NSString
 
     var lineNumber = 0
+    
+    var scanner = NSScanner(string: string)
+    scanner.charactersToBeSkipped = WhitespaceCharacterSet
 
+    commandLoop: while !scanner.atEnd {
+      consumeCommentsAndNewlines(scanner)
+
+      let maybeWord = scanWord(scanner)
+
+      if maybeWord == nil {
+        if scanner.atEnd { return }
+
+        println("Ran out of input")
+        exit(1)
+      }
+
+      let word = maybeWord!
+
+      for (command, action) in map {
+        if word == command {
+          // println("Action found for \(word)")
+          action(scanner, 0)
+          continue commandLoop
+        }
+      }
+
+      println("Unrecognied token `\(word)`")
+      exit(1)
+    }
+
+
+    /*
     stringAsNSString.enumerateLinesUsingBlock { (line, stop) in
-      // Map names to processors
-      let map = [
-        "name": self.parseName,
-        "sources": self.parseSources
-      ]
-
       let scanner = NSScanner(string: line)
       lineNumber += 1
 
@@ -48,6 +80,7 @@ class Roostfile {
       println("Unrecognized token '\(token!)' on line \(lineNumber)")
       exit(1)
     }
+    */
   }
 
   func parseName(scanner: NSScanner, _ lineNumber: Int) {
@@ -69,6 +102,13 @@ class Roostfile {
     }
   }
 
+  func parseModule(scanner: NSScanner, _ lineNumber: Int) {
+    mustScanWord(scanner, "{")
+
+    scanner.scanUpToString("}", intoString: nil)
+    scanner.scanString("}", intoString: nil)
+  }
+
   func validate() {
     // TODO: Implement some validations
     return
@@ -87,6 +127,17 @@ class Roostfile {
     return scanned ? (token as String?) : nil
   }
 
+  private func mustScanWord(scanner: NSScanner, _ expectedWord: String) {
+    let word = scanWord(scanner)
+
+    if word == nil {
+      println("Expected word"); exit(1)
+    }
+    if word != expectedWord {
+      println("Expected '\(expectedWord)', got '\(word)'"); exit(1)
+    }
+  }
+
   private func scanWords(scanner: NSScanner) -> [String] {
     var words: [String] = []
 
@@ -101,8 +152,23 @@ class Roostfile {
     return words
   }
 
+  private let newlineCharacterSet = NSCharacterSet(charactersInString: "\n")
+
+  private func consumeCommentsAndNewlines(scanner: NSScanner) {
+    while true {
+      // Gulp up any newlines
+      scanner.scanCharactersFromSet(newlineCharacterSet, intoString: nil)
+
+      // We encountered a non-comment
+      if !scanner.scanString(commentToken, intoString: nil) {
+        return
+      }
+      scanner.scanUpToCharactersFromSet(newlineCharacterSet, intoString: nil)
+    }
+  }
+
   private func consumeWhitespace(scanner: NSScanner) -> Bool {
-    return scanner.scanCharactersFromSet(whitespaceCharacterSet, intoString: nil)
+    return scanner.scanCharactersFromSet(WhitespaceCharacterSet, intoString: nil)
   }
 
 }// class Roostfile
