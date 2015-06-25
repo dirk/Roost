@@ -3,3 +3,8 @@
 
 name Roost
 sources Roost/
+
+module {
+  name Tasker
+  sources Tasker/
+}

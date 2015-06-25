@@ -9,6 +9,7 @@ class Roostfile {
   var name: String!
   var directory: String!
   var sources: [String] = []
+  var modules = [String : RoostfileModule]()
 
   func parseFromString(string: String) {
     // Map names to processors
@@ -47,40 +48,9 @@ class Roostfile {
         }
       }
 
-      println("Unrecognied token `\(word)`")
+      println("Unrecognized token `\(word)`")
       exit(1)
     }
-
-
-    /*
-    stringAsNSString.enumerateLinesUsingBlock { (line, stop) in
-      let scanner = NSScanner(string: line)
-      lineNumber += 1
-
-      // Skip lines beginning with a comment
-      if scanner.scanString(commentToken, intoString: nil) {
-        return
-      }
-      // Skip all whitespace
-      if scanner.atEnd {
-        return
-      }
-
-      // TODO: Allow multi-line statements
-
-      for (command, action) in map {
-        if scanner.scanString(command, intoString: nil) {
-          action(scanner, lineNumber)
-          break
-        }
-      }
-      if scanner.atEnd { return }
-
-      let token = self.scanWord(scanner)
-      println("Unrecognized token '\(token!)' on line \(lineNumber)")
-      exit(1)
-    }
-    */
   }
 
   func parseName(scanner: NSScanner, _ lineNumber: Int) {
@@ -103,10 +73,38 @@ class Roostfile {
   }
 
   func parseModule(scanner: NSScanner, _ lineNumber: Int) {
-    mustScanWord(scanner, "{")
+    expectWord(scanner, "{")
 
-    scanner.scanUpToString("}", intoString: nil)
-    scanner.scanString("}", intoString: nil)
+    var module = RoostfileModule()
+    var terminated = false
+
+    while true {
+      consumeCommentsAndNewlines(scanner)
+
+      let word = scanWord(scanner)
+
+      if word == nil { break }
+
+      switch word! {
+        case "name":
+          module.name = mustScanWord(scanner)
+        case "sources":
+          module.sources = scanWords(scanner)
+        case "}":
+          terminated = true
+          break
+        default:
+          println("Unrecognized token '\(word!)'")
+          exit(1)
+      }
+    }
+    
+    if !terminated {
+      println("Encountered unterminated module")
+      exit(1)
+    }
+
+    modules[module.name] = module
   }
 
   func validate() {
@@ -117,6 +115,14 @@ class Roostfile {
   func inspect() {
     println("name \(name)")
     println("sources \(sources)")
+
+    for (name, module) in modules {
+      println("module {")
+
+      module.inspect()
+
+      println("}")
+    }
   }
 
 
@@ -127,12 +133,19 @@ class Roostfile {
     return scanned ? (token as String?) : nil
   }
 
-  private func mustScanWord(scanner: NSScanner, _ expectedWord: String) {
-    let word = scanWord(scanner)
-
+  private func mustScanWord(scanner: NSScanner) -> String {
+    var word = scanWord(scanner)
+    
     if word == nil {
       println("Expected word"); exit(1)
     }
+
+    return word!
+  }
+
+  private func expectWord(scanner: NSScanner, _ expectedWord: String) {
+    let word = scanWord(scanner)
+
     if word != expectedWord {
       println("Expected '\(expectedWord)', got '\(word)'"); exit(1)
     }
