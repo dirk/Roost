@@ -9,46 +9,17 @@ class Package {
   init(_ r: Roostfile) {
     roostfile = r
 
-    scanSources()
-  }
+    for sourceDirectory in roostfile.sources {
+      if !(sourceDirectory as NSString).hasSuffix("/") {
+        println("Cannot handle directory like '\(sourceDirectory)'")
+        continue
+      }
 
-  func compile() {
-    let binFilePath = "bin/\(roostfile.name.lowercaseString)"
+      let baseDirectory = roostfile.directory as NSString
+      let directory = baseDirectory.stringByAppendingPathComponent(sourceDirectory)
 
-    var arguments: [String] = ["swiftc"]
-    
-    let sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
-    arguments.append("-sdk")
-    arguments.append(sdkPath)
-
-    // Compile all of the sources
-    arguments.extend(sourceFiles)
-
-    // And set the location of the output executable
-    arguments.append("-o")
-    arguments.append(binFilePath)
-
-    let argumentsString = " ".join(arguments)
-
-    let outputPipe  = NSPipe()
-    let errorPipe   = NSPipe()
-    let compileTask = NSTask()
-    compileTask.launchPath = "/bin/sh"
-    compileTask.arguments = ["-c", argumentsString]
-    compileTask.standardOutput = outputPipe
-    compileTask.standardError  = errorPipe
-
-    compileTask.launch()
-
-    print(readPipeToString(outputPipe))
-    print(readPipeToString(errorPipe))
-
-    println("Compiled \(roostfile.name) to \(binFilePath)")
-  }
-
-  private func readPipeToString(pipe: NSPipe) -> NSString {
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    return NSString(data: data, encoding: NSUTF8StringEncoding)!
+      sourceFiles.extend(scanDirectoryForSources(directory))
+    }
   }
 
   func getSDKPath() -> String {
@@ -65,24 +36,18 @@ class Package {
     return NSString(data: outputData, encoding: NSUTF8StringEncoding) as! String
   }
 
-  private func scanSources() {
-    let directory = roostfile.directory as NSString
+  func scanDirectoryForSources(directory: String) -> [String] {
     let fileManager = NSFileManager()
+    let enumerator = fileManager.enumeratorAtPath(directory)!
 
-    for source in roostfile.sources {
-      if !(source as NSString).hasSuffix("/") {
-        println("Cannot handle source pattern '\(source)'")
-        continue
-      }
+    var files = [String]()
 
-      let path = directory.stringByAppendingPathComponent(source)
-      let enumerator = fileManager.enumeratorAtPath(path)!
-
-      for file in enumerator {
-        let filePath = path.stringByAppendingPathComponent(file as! String)
-        sourceFiles.append(filePath)
-      }
+    for file in enumerator {
+      let filePath = directory.stringByAppendingPathComponent(file as! String)
+      files.append(filePath)
     }
+
+    return files
   }// scanSources()
 
 }
