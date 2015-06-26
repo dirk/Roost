@@ -43,7 +43,10 @@ class Package {
     var files = [String]()
 
     for file in enumerator {
+      if !file.hasSuffix(".swift") { continue }
+
       let filePath = directory.stringByAppendingPathComponent(file as! String)
+
       files.append(filePath)
     }
 

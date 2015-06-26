@@ -9,11 +9,11 @@ extension Package {
     return ["swiftc", "-sdk", sdkPath]
   }
 
-  func libraryFilePathForModule(module: RoostfileModule) -> String {
+  func libraryFilePathForModule(module: Roostfile.Module) -> String {
     return "build/lib\(module.name).dylib"
   }
 
-  func compileModule(module: RoostfileModule) {
+  func compileModule(module: Roostfile.Module) {
     let moduleFilePath = "build/\(module.name).swiftmodule"
     let libraryFilePath = libraryFilePathForModule(module)
 

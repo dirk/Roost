@@ -9,7 +9,11 @@ class Roostfile {
   var name: String!
   var directory: String!
   var sources: [String] = []
-  var modules = [String : RoostfileModule]()
+  var modules: Dictionary<String, Roostfile.Module>
+
+  init() {
+    modules = Dictionary<String, Roostfile.Module>()
+  }
 
   func parseFromString(string: String) {
     // Map names to processors
@@ -75,7 +79,7 @@ class Roostfile {
   func parseModule(scanner: NSScanner, _ lineNumber: Int) {
     expectWord(scanner, "{")
 
-    var module = RoostfileModule()
+    var module = Roostfile.Module()
     var terminated = false
 
     while true {
