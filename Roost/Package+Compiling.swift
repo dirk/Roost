@@ -10,12 +10,13 @@ extension Package {
   }
 
   func libraryFilePathForModule(module: Roostfile.Module) -> String {
-    return "build/lib\(module.name).dylib"
+    return "build/lib\(module.name).a"
   }
 
   func compileModule(module: Roostfile.Module) {
     let moduleFilePath = "build/\(module.name).swiftmodule"
     let libraryFilePath = libraryFilePathForModule(module)
+    let temporaryObjectPath = "build/tmp-\(module.name).o"
 
     var arguments = commonCompilerArguments()
 
@@ -37,15 +38,17 @@ extension Package {
                        arguments: ["-c", " ".join(moduleArguments)],
                        finished: "Compiled Swift for module \(module.name) to \(moduleFilePath)")
 
-    // Compile the Swift library
+    // Compile the native library
     var libraryArguments = arguments
-
-    libraryArguments.extend(["-emit-library -o", libraryFilePath])
-    executeShellTaskWithArguments(libraryArguments)
-
-    announceAndRunTask("Compiling \(libraryFilePath)... ",
+    libraryArguments.extend(["-parse-as-library", "-emit-object"])
+    libraryArguments.extend(["-module-name", module.name])
+    libraryArguments.extend(["-o", temporaryObjectPath])
+    announceAndRunTask("Compiling \(temporaryObjectPath)... ",
                        arguments: ["-c", " ".join(libraryArguments)],
-                       finished: "Compiled library for module \(module.name) to \(libraryFilePath)")
+                       finished: "Compiled object for module \(module.name) to \(temporaryObjectPath)")
+    announceAndRunTask("Archiving \(libraryFilePath)... ",
+                       arguments: ["-c", "libtool -o \(libraryFilePath) \(temporaryObjectPath)"],
+                       finished: "Archived library for module \(module.name) to \(libraryFilePath)")
   }
 
   func compile() {
