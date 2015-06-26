@@ -49,6 +49,10 @@ extension Package {
     announceAndRunTask("Archiving \(libraryFilePath)... ",
                        arguments: ["-c", "libtool -o \(libraryFilePath) \(temporaryObjectPath)"],
                        finished: "Archived library for module \(module.name) to \(libraryFilePath)")
+
+    // Remove the old temporary file
+    var error: NSError?
+    NSFileManager.defaultManager().removeItemAtPath(temporaryObjectPath, error: &error)
   }
 
   func compile() {
@@ -82,7 +86,7 @@ extension Package {
 
   func announceAndRunTask(announcement: String, arguments: [String], finished: String) {
     print(announcement)
-    fflush(__stdoutp)
+    stdoutFlush()
 
     let task = Task("/bin/sh")
     task.arguments = arguments
@@ -99,22 +103,8 @@ extension Package {
     }
   }
 
-  func executeShellTaskWithArguments(arguments: [String]) -> NSTask {
-    let argumentsString = " ".join(arguments)
-    let outputPipe = NSPipe()
-    let errorPipe  = NSPipe()
-    let task = NSTask()
-    task.launchPath = "/bin/sh"
-    task.arguments = ["-c", argumentsString]
-    task.standardOutput = outputPipe
-    task.standardError  = errorPipe
-
-    task.launch()
-
-    print(readPipeToString(outputPipe))
-    print(readPipeToString(errorPipe))
-
-    return task
+  private func stdoutFlush() {
+    fflush(__stdoutp)
   }
 
   private func readPipeToString(pipe: NSPipe) -> NSString {
