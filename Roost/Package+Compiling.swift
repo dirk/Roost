@@ -1,4 +1,5 @@
 import Foundation
+import Tasker
 
 extension Package {
 
@@ -8,9 +9,14 @@ extension Package {
     return ["swiftc", "-sdk", sdkPath]
   }
 
+  func libraryFilePathForModule(module: RoostfileModule) -> String {
+    return "build/lib\(module.name).dylib"
+  }
+
   func compileModule(module: RoostfileModule) {
     let moduleFilePath = "build/\(module.name).swiftmodule"
-    
+    let libraryFilePath = libraryFilePathForModule(module)
+
     var arguments = commonCompilerArguments()
 
     var sources = [String]()
@@ -23,12 +29,23 @@ extension Package {
 
     arguments.extend(sources)
 
-    arguments.append("-emit-module-path")
-    arguments.append(moduleFilePath)
+    // Compile the Swift module
+    var moduleArguments = arguments
 
-    executeShellTaskWithArguments(arguments)
+    moduleArguments.extend(["-emit-module-path", moduleFilePath])
+    announceAndRunTask("Compiling \(moduleFilePath)... ",
+                       arguments: ["-c", " ".join(moduleArguments)],
+                       finished: "Compiled Swift for module \(module.name) to \(moduleFilePath)")
 
-    println("Compiled module \(module.name) to \(moduleFilePath)")
+    // Compile the Swift library
+    var libraryArguments = arguments
+
+    libraryArguments.extend(["-emit-library -o", libraryFilePath])
+    executeShellTaskWithArguments(libraryArguments)
+
+    announceAndRunTask("Compiling \(libraryFilePath)... ",
+                       arguments: ["-c", " ".join(libraryArguments)],
+                       finished: "Compiled library for module \(module.name) to \(libraryFilePath)")
   }
 
   func compile() {
@@ -38,7 +55,7 @@ extension Package {
 
     let binFilePath = "bin/\(roostfile.name.lowercaseString)"
 
-    var arguments: [String] = commonCompilerArguments()
+    var arguments = commonCompilerArguments()
 
     // Compile all of the sources
     arguments.extend(sourceFiles)
@@ -49,10 +66,34 @@ extension Package {
 
     // Set search path
     arguments.append("-I build")
+    arguments.append("-L build")
 
-    executeShellTaskWithArguments(arguments)
+    for (_, module) in roostfile.modules {
+      arguments.append("-l\(module.name)")
+    }
 
-    println("Compiled \(roostfile.name) to \(binFilePath)")
+    announceAndRunTask("Compiling \(binFilePath)... ",
+                       arguments: ["-c", " ".join(arguments)],
+                       finished: "Compiled \(roostfile.name) to \(binFilePath)")
+  }
+
+  func announceAndRunTask(announcement: String, arguments: [String], finished: String) {
+    print(announcement)
+    fflush(__stdoutp)
+
+    let task = Task("/bin/sh")
+    task.arguments = arguments
+
+    task.launchAndWait()
+
+    print("\r") // Reset to beginning of line
+
+    if task.hasAnyOutput() {
+      println(task.outputString)
+      println(task.errorString)
+    } else {
+      println(finished)
+    }
   }
 
   func executeShellTaskWithArguments(arguments: [String]) -> NSTask {

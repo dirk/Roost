@@ -1,12 +1,15 @@
 SWIFTC=swiftc -sdk $(shell xcrun --show-sdk-path)
 
-bin/roost: Roost/*.swift build/Tasker.swiftmodule
+bin/roost: Roost/*.swift build/Tasker.swiftmodule build/libTasker.dylib
 	$(eval sources = $(filter %.swift, $^))
 	@# Build with the sources and the modules
-	$(SWIFTC) $(sources) -I build -o $@
+	$(SWIFTC) $(sources) -I build -L build -lTasker -o $@
 
 build/Tasker.swiftmodule: Tasker/*.swift
 	$(SWIFTC) -emit-module-path $@ $^
+
+build/libTasker.dylib: Tasker/*.swift
+	$(SWIFTC) -emit-library -o $@ $^ 
 
 .PHONY: clean
 
