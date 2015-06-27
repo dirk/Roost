@@ -2,13 +2,25 @@ import Foundation
 
 class Package {
   var roostfile: Roostfile
-
   var sourceFiles: [String] = []
+  var lastModificationDate: NSDate = NSDate()
+  var modules: [Package.Module] = []
 
   init(_ r: Roostfile) {
-    roostfile = r
+    roostfile            = r
+    sourceFiles          = scanSourcesDirectories(roostfile.sources)
+    lastModificationDate = computeLastModificationDate(sourceFiles)
 
-    for sourceDirectory in roostfile.sources {
+    // Initial all of our modules from the Roostfile's modules
+    for (_, module) in roostfile.modules {
+      modules.append(Package.Module(module, parent: self))
+    }
+  }
+
+  func scanSourcesDirectories(directories: [String]) -> [String] {
+    var sources = [String]()
+
+    for sourceDirectory in directories {
       if !(sourceDirectory as NSString).hasSuffix("/") {
         println("Cannot handle directory like '\(sourceDirectory)'")
         continue
@@ -17,8 +29,34 @@ class Package {
       let baseDirectory = roostfile.directory as NSString
       let directory = baseDirectory.stringByAppendingPathComponent(sourceDirectory)
 
-      sourceFiles.extend(scanDirectoryForSources(directory))
+      sources.extend(scanDirectoryForSources(directory))
     }
+
+    return sources
+  }
+
+  func computeLastModificationDate(paths: [String]) -> NSDate {
+    let manager = NSFileManager.defaultManager()
+    
+    var dates = [NSDate]()
+    var error: NSError?
+
+    for path in paths {
+      let attributes = manager.attributesOfItemAtPath(path, error: &error)
+      if attributes == nil { continue }
+
+      let maybeDate: AnyObject? = attributes![NSFileModificationDate]
+      if maybeDate == nil { continue }
+
+      let date = maybeDate! as! NSDate
+      dates.append(date)
+    }
+
+    let datesAscending = dates.sorted({ (a: NSDate, b: NSDate) -> Bool in
+      return a.compare(b) == NSComparisonResult.OrderedAscending ? true : false
+    })
+    
+    return datesAscending.last!
   }
 
   func getSDKPath() -> String {

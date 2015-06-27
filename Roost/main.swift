@@ -25,7 +25,7 @@ func main() {
 
   // roostfile.inspect()
 
-  let package = Package(roostfile)
+  let package = roostfile.asPackage()
 
   package.compile()
 }

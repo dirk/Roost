@@ -9,26 +9,18 @@ extension Package {
     return ["swiftc", "-sdk", sdkPath]
   }
 
-  func libraryFilePathForModule(module: Roostfile.Module) -> String {
+  func libraryFilePathForModule(module: Package.Module) -> String {
     return "build/lib\(module.name).a"
   }
 
-  func compileModule(module: Roostfile.Module) {
+  func compileModule(module: Package.Module) {
     let moduleFilePath = "build/\(module.name).swiftmodule"
     let libraryFilePath = libraryFilePathForModule(module)
     let temporaryObjectPath = "build/tmp-\(module.name).o"
 
     var arguments = commonCompilerArguments()
 
-    var sources = [String]()
-
-    for sourceDirectory in module.sources {
-      let directory = (roostfile.directory as NSString).stringByAppendingPathComponent(sourceDirectory)
-
-      sources.extend(scanDirectoryForSources(directory))
-    }
-
-    arguments.extend(sources)
+    arguments.extend(module.sourceFiles)
 
     // Compile the Swift module
     var moduleArguments = arguments
@@ -56,7 +48,7 @@ extension Package {
   }
 
   func compile() {
-    for (_, module) in roostfile.modules {
+    for module in modules {
       compileModule(module)
     }
 

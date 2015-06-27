@@ -57,6 +57,10 @@ class Roostfile {
     }
   }
 
+  func asPackage() -> Package {
+    return Package(self)
+  }
+
   func parseName(scanner: NSScanner, _ lineNumber: Int) {
     let token = scanWord(scanner)
 
