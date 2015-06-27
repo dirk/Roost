@@ -8,19 +8,17 @@ let WhitespaceAndNewlineCharacterSet = NSCharacterSet.whitespaceAndNewlineCharac
 class Roostfile {
   var name: String!
   var directory: String!
-  var sources: [String] = []
-  var modules: Dictionary<String, Roostfile.Module>
-
-  init() {
-    modules = Dictionary<String, Roostfile.Module>()
-  }
+  var sources              = [String]()
+  var frameworkSearchPaths = [String]()
+  var modules              = Dictionary<String, Roostfile.Module>()
 
   func parseFromString(string: String) {
     // Map names to processors
     let map = [
-      "name":    self.parseName,
-      "sources": self.parseSources,
-      "module":  self.parseModule
+      "name":                 self.parseName,
+      "sources":              self.parseSources,
+      "module":               self.parseModule,
+      "frameworkSearchPaths": self.parseFrameworkSearchPaths,
     ]
 
     let stringAsNSString = string as NSString
@@ -78,6 +76,10 @@ class Roostfile {
       println("Must have at least one source in sources on line \(lineNumber)")
       exit(1)
     }
+  }
+
+  func parseFrameworkSearchPaths(scanner: NSScanner, _ lineNumber: Int) {
+    frameworkSearchPaths = scanWords(scanner)
   }
 
   func parseModule(scanner: NSScanner, _ lineNumber: Int) {

@@ -3,6 +3,7 @@
 
 name Roost
 sources Roost/
+frameworkSearchPaths vendor/Carthage/Build/Mac
 
 module {
   name Tasker

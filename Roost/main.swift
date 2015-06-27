@@ -1,4 +1,5 @@
 import Foundation
+import SwiftGit2
 
 func main() {
   let fileManager = NSFileManager()

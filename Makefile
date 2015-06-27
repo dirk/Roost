@@ -5,7 +5,7 @@ SOURCES=$(shell find Roost -name '*.swift')
 bin/roost: $(SOURCES) build/Tasker.swiftmodule build/libTasker.a
 	$(eval sources = $(filter %.swift, $^))
 	@# Build with the sources and the modules
-	$(SWIFTC) $(sources) -I build -L build -lTasker -o $@
+	$(SWIFTC) $(sources) -I build -L build -F vendor/Carthage/Build/Mac -lTasker -o $@
 
 build/Tasker.swiftmodule: Tasker/*.swift
 	$(SWIFTC) -emit-module-path $@ $^

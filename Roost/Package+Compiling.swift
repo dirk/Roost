@@ -3,6 +3,10 @@ import Tasker
 
 extension Package {
 
+  var frameworkSearchPaths: [String] {
+    get { return roostfile.frameworkSearchPaths }
+  }
+
   private func commonCompilerArguments() -> [String] {
     let sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
 
@@ -38,10 +42,16 @@ extension Package {
     arguments.append("-o")
     arguments.append(binFilePath)
 
-    // Set search path
+    // Add any framework search paths
+    for path in frameworkSearchPaths {
+      arguments.append("-F \(path)")
+    }
+
+    // Set search path for the modules
     arguments.append("-I build")
     arguments.append("-L build")
 
+    // Link the modules
     for (_, module) in roostfile.modules {
       arguments.append("-l\(module.name)")
     }
