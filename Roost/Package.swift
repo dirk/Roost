@@ -53,7 +53,8 @@ class Package {
     }
 
     let datesAscending = dates.sorted({ (a: NSDate, b: NSDate) -> Bool in
-      return a.compare(b) == NSComparisonResult.OrderedAscending ? true : false
+      return !a.isNewerThan(b)
+      // return a.compare(b) == NSComparisonResult.OrderedAscending ? true : false
     })
     
     return datesAscending.last!

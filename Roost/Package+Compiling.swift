@@ -9,50 +9,25 @@ extension Package {
     return ["swiftc", "-sdk", sdkPath]
   }
 
-  func libraryFilePathForModule(module: Package.Module) -> String {
-    return "build/lib\(module.name).a"
-  }
-
-  func compileModule(module: Package.Module) {
-    let moduleFilePath = "build/\(module.name).swiftmodule"
-    let libraryFilePath = libraryFilePathForModule(module)
-    let temporaryObjectPath = "build/tmp-\(module.name).o"
-
-    var arguments = commonCompilerArguments()
-
-    arguments.extend(module.sourceFiles)
-
-    // Compile the Swift module
-    var moduleArguments = arguments
-
-    moduleArguments.extend(["-emit-module-path", moduleFilePath])
-    announceAndRunTask("Compiling \(moduleFilePath)... ",
-                       arguments: ["-c", " ".join(moduleArguments)],
-                       finished: "Compiled Swift for module \(module.name) to \(moduleFilePath)")
-
-    // Compile the native library
-    var libraryArguments = arguments
-    libraryArguments.extend(["-parse-as-library", "-emit-object"])
-    libraryArguments.extend(["-module-name", module.name])
-    libraryArguments.extend(["-o", temporaryObjectPath])
-    announceAndRunTask("Compiling \(temporaryObjectPath)... ",
-                       arguments: ["-c", " ".join(libraryArguments)],
-                       finished: "Compiled object for module \(module.name) to \(temporaryObjectPath)")
-    announceAndRunTask("Archiving \(libraryFilePath)... ",
-                       arguments: ["-c", "libtool -o \(libraryFilePath) \(temporaryObjectPath)"],
-                       finished: "Archived library for module \(module.name) to \(libraryFilePath)")
-
-    // Remove the old temporary file
-    var error: NSError?
-    NSFileManager.defaultManager().removeItemAtPath(temporaryObjectPath, error: &error)
-  }
-
   func compile() {
+    var modulesCompiled = false
+
     for module in modules {
-      compileModule(module)
+      let compiled = compileModule(module)
+
+      modulesCompiled = modulesCompiled || compiled
     }
 
     let binFilePath = "bin/\(roostfile.name.lowercaseString)"
+    let binFileModificationDate = getFileModificationDate(binFilePath)
+
+    if let date = binFileModificationDate {
+      // Don't bother compiling if we haven't been modified since the last
+      // target was built
+      if !modulesCompiled && !lastModificationDate.isNewerThan(date) {
+        return
+      }
+    }
 
     var arguments = commonCompilerArguments()
 
@@ -75,6 +50,73 @@ extension Package {
                        arguments: ["-c", " ".join(arguments)],
                        finished: "Compiled \(roostfile.name) to \(binFilePath)")
   }
+
+
+// Compiling modules
+
+  func libraryFilePathForModule(module: Package.Module) -> String {
+    return "build/lib\(module.name).a"
+  }
+
+  func swiftModuleFilePathForModule(module: Package.Module) -> String {
+    return "build/\(module.name).swiftmodule"
+  }
+
+  func compileSwiftModuleForModule(baseArguments: [String], _ module: Package.Module) {
+    let path = swiftModuleFilePathForModule(module)
+    var arguments = baseArguments
+
+    arguments.extend(["-emit-module-path", path])
+    announceAndRunTask("Compiling \(path)... ",
+                       arguments: ["-c", " ".join(arguments)],
+                       finished: "Compiled Swift for module \(module.name) to \(path)")
+  }
+
+  func compileNativeModuleForModule(baseArguments: [String], _ module: Package.Module) {
+    let temporaryObjectPath = "build/tmp-\(module.name).o"
+    let libraryFilePath = libraryFilePathForModule(module)
+    var libraryArguments = baseArguments
+
+    libraryArguments.extend(["-parse-as-library", "-emit-object"])
+    libraryArguments.extend(["-module-name", module.name])
+    libraryArguments.extend(["-o", temporaryObjectPath])
+    announceAndRunTask("Compiling \(temporaryObjectPath)... ",
+                       arguments: ["-c", " ".join(libraryArguments)],
+                       finished: "Compiled object for module \(module.name) to \(temporaryObjectPath)")
+    announceAndRunTask("Archiving \(libraryFilePath)... ",
+                       arguments: ["-c", "libtool -o \(libraryFilePath) \(temporaryObjectPath)"],
+                       finished: "Archived library for module \(module.name) to \(libraryFilePath)")
+
+    // Remove the old temporary file
+    var error: NSError?
+    NSFileManager.defaultManager().removeItemAtPath(temporaryObjectPath, error: &error)
+  }
+
+  func compileModule(module: Package.Module) -> Bool {
+    // First check if we even need to compile it
+    let libraryPath = libraryFilePathForModule(module)
+    let libraryModificationDate = getFileModificationDate(libraryPath)
+
+    if let date = libraryModificationDate {
+      if !module.lastModificationDate.isNewerThan(date) {
+        return false
+      }
+    }
+
+    var arguments = commonCompilerArguments()
+    arguments.extend(module.sourceFiles)
+
+    // Compile the Swift module
+    compileSwiftModuleForModule(arguments, module)
+
+    // Compile the native library
+    compileNativeModuleForModule(arguments, module)
+
+    return true
+  }
+
+
+// Internal utitlies
 
   func announceAndRunTask(announcement: String, arguments: [String], finished: String) {
     print(announcement)
