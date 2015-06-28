@@ -5,7 +5,7 @@ func main() {
   let fileManager = NSFileManager()
 
   let cwd = currentDirectoryPath()
-  let path = NSString.pathWithComponents([cwd, "Roostfile"])
+  let path = NSString.pathWithComponents([cwd, "Roostfile.yaml"])
 
   if !fileManager.fileExistsAtPath(path) {
     printAndExit("Missing Roostfile in '\(cwd)'")
