@@ -2,10 +2,12 @@ SWIFTC=swiftc -sdk $(shell xcrun --show-sdk-path)
 
 SOURCES=$(shell find Roost -name '*.swift')
 
+FRAMEWORKS=-F vendor/Carthage/Build/Mac -Xlinker -rpath -Xlinker @executable_path/../vendor/Carthage/Build/Mac
+
 bin/roost: $(SOURCES) build/Tasker.swiftmodule build/libTasker.a
 	$(eval sources = $(filter %.swift, $^))
 	@# Build with the sources and the modules
-	$(SWIFTC) $(sources) -I build -L build -F vendor/Carthage/Build/Mac -lTasker -o $@
+	$(SWIFTC) $(sources) -I build -L build -lTasker $(FRAMEWORKS) -o $@
 
 build/Tasker.swiftmodule: Tasker/*.swift
 	$(SWIFTC) -emit-module-path $@ $^
