@@ -2,9 +2,12 @@
   # This is an indented comment
 
 name: Roost
-sources: Roost/
-frameworkSearchPaths: vendor/Carthage/Build/Mac
+sources:
+  - Roost/
+frameworkSearchPaths:
+  - vendor/Carthage/Build/Mac
 
 module:
   name: Tasker
-  sources: Tasker/
+  sources:
+    - Tasker/

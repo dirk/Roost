@@ -1,4 +1,5 @@
 import Foundation
+import Yaml
 
 private let commentToken = "#"
 
@@ -13,6 +14,8 @@ class Roostfile {
   var modules              = Dictionary<String, Roostfile.Module>()
 
   func parseFromString(string: String) {
+    let yaml = Yaml.load(string).value!
+
     // Map names to processors
     let map = [
       "name":                 self.parseName,
@@ -20,102 +23,155 @@ class Roostfile {
       "module":               self.parseModule,
       "frameworkSearchPaths": self.parseFrameworkSearchPaths,
     ]
-
-    let stringAsNSString = string as NSString
-
-    var lineNumber = 0
     
-    var scanner = NSScanner(string: string)
-    scanner.charactersToBeSkipped = WhitespaceCharacterSet
+    for (keyYaml, valueYaml) in yaml.dictionary! {
+      let key = keyYaml.string!
 
-    commandLoop: while !scanner.atEnd {
-      consumeCommentsAndNewlines(scanner)
+      if let action = map[key] {
+        action(valueYaml)
 
-      let maybeWord = scanWord(scanner)
-
-      if maybeWord == nil {
-        if scanner.atEnd { return }
-
-        println("Ran out of input")
-        exit(1)
+      } else {
+        println("Can't parse key \(key)")
       }
-
-      let word = maybeWord!
-
-      for (command, action) in map {
-        if word == command {
-          // println("Action found for \(word)")
-          action(scanner, 0)
-          continue commandLoop
-        }
-      }
-
-      println("Unrecognized token `\(word)`")
-      exit(1)
     }
-  }
+  }// parseFromString
 
   func asPackage() -> Package {
     return Package(self)
   }
 
-  func parseName(scanner: NSScanner, _ lineNumber: Int) {
-    let token = scanWord(scanner)
-
-    if token == nil {
-      println("Missing name on line \(lineNumber)")
-      exit(1)
-    }
-    name = token!
+  func parseName(yaml: Yaml) {
+    name = yaml.string!
   }
 
-  func parseSources(scanner: NSScanner, _ lineNumber: Int) {
-    sources = scanWords(scanner)
-
-    if sources.count == 0 {
-      println("Must have at least one source in sources on line \(lineNumber)")
-      exit(1)
-    }
-  }
-
-  func parseFrameworkSearchPaths(scanner: NSScanner, _ lineNumber: Int) {
-    frameworkSearchPaths = scanWords(scanner)
-  }
-
-  func parseModule(scanner: NSScanner, _ lineNumber: Int) {
-    expectWord(scanner, "{")
-
-    var module = Roostfile.Module()
-    var terminated = false
-
-    while true {
-      consumeCommentsAndNewlines(scanner)
-
-      let word = scanWord(scanner)
-
-      if word == nil { break }
-
-      switch word! {
-        case "name":
-          module.name = mustScanWord(scanner)
-        case "sources":
-          module.sources = scanWords(scanner)
-        case "}":
-          terminated = true
-          break
-        default:
-          println("Unrecognized token '\(word!)'")
-          exit(1)
+  func parseSources(yaml: Yaml) {
+    if let sourcesYamls = yaml.array {
+      sources = sourcesYamls.map { (s) in
+        return s.string!
       }
+    } else {
+      println("Cannot parse sources")
     }
-    
-    if !terminated {
-      println("Encountered unterminated module")
-      exit(1)
+  }
+
+  func parseModule(yaml: Yaml) {
+    var module = Roostfile.Module()
+
+    module.name = yaml["name"].string!
+    module.sources = yaml["sources"].array!.map { (y: Yaml) in
+      return y.string!
     }
 
     modules[module.name] = module
   }
+
+  func parseFrameworkSearchPaths(yaml: Yaml) {
+    frameworkSearchPaths = yaml.array!.map { (y: Yaml) in
+      return y.string!
+    }
+  }
+
+
+  // func parseFromString(string: String) {
+  //   // Map names to processors
+  //   let map = [
+  //     "name":                 self.parseName,
+  //     "sources":              self.parseSources,
+  //     "module":               self.parseModule,
+  //     "frameworkSearchPaths": self.parseFrameworkSearchPaths,
+  //   ]
+  //
+  //   let stringAsNSString = string as NSString
+  //
+  //   var lineNumber = 0
+  //   
+  //   var scanner = NSScanner(string: string)
+  //   scanner.charactersToBeSkipped = WhitespaceCharacterSet
+  //
+  //   commandLoop: while !scanner.atEnd {
+  //     consumeCommentsAndNewlines(scanner)
+  //
+  //     let maybeWord = scanWord(scanner)
+  //
+  //     if maybeWord == nil {
+  //       if scanner.atEnd { return }
+  //
+  //       println("Ran out of input")
+  //       exit(1)
+  //     }
+  //
+  //     let word = maybeWord!
+  //
+  //     for (command, action) in map {
+  //       if word == command {
+  //         // println("Action found for \(word)")
+  //         action(scanner, 0)
+  //         continue commandLoop
+  //       }
+  //     }
+  //
+  //     println("Unrecognized token `\(word)`")
+  //     exit(1)
+  //   }
+  // }
+
+  // func parseName(scanner: NSScanner, _ lineNumber: Int) {
+  //   let token = scanWord(scanner)
+  //
+  //   if token == nil {
+  //     println("Missing name on line \(lineNumber)")
+  //     exit(1)
+  //   }
+  //   name = token!
+  // }
+
+  // func parseSources(scanner: NSScanner, _ lineNumber: Int) {
+  //   sources = scanWords(scanner)
+  //
+  //   if sources.count == 0 {
+  //     println("Must have at least one source in sources on line \(lineNumber)")
+  //     exit(1)
+  //   }
+  // }
+
+  // func parseFrameworkSearchPaths(scanner: NSScanner, _ lineNumber: Int) {
+  //   frameworkSearchPaths = scanWords(scanner)
+  // }
+
+  // func parseModule(scanner: NSScanner, _ lineNumber: Int) {
+  //   expectWord(scanner, "{")
+  //
+  //   var module = Roostfile.Module()
+  //   var terminated = false
+  //
+  //   while true {
+  //     consumeCommentsAndNewlines(scanner)
+  //
+  //     let word = scanWord(scanner)
+  //
+  //     if word == nil { break }
+  //
+  //     switch word! {
+  //       case "name":
+  //         module.name = mustScanWord(scanner)
+  //       case "sources":
+  //         module.sources = scanWords(scanner)
+  //       case "}":
+  //         terminated = true
+  //         break
+  //       default:
+  //         println("Unrecognized token '\(word!)'")
+  //         exit(1)
+  //     }
+  //   }
+  //   
+  //   if !terminated {
+  //     println("Encountered unterminated module")
+  //     exit(1)
+  //   }
+  //
+  //   modules[module.name] = module
+  // }
 
   func validate() {
     // TODO: Implement some validations
@@ -195,4 +251,3 @@ class Roostfile {
   }
 
 }// class Roostfile
-

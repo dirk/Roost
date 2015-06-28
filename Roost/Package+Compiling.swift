@@ -44,7 +44,11 @@ extension Package {
 
     // Add any framework search paths
     for path in frameworkSearchPaths {
+      // Compiler framework support
       arguments.append("-F \(path)")
+
+      // Linker framework support
+      arguments.append("-Xlinker -rpath -Xlinker @executable_path/../\(path)")
     }
 
     // Set search path for the modules
