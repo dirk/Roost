@@ -6,15 +6,54 @@ class Package {
   var lastModificationDate: NSDate = NSDate()
   var modules: [Package.Module] = []
 
+  var targetType: TargetType {
+    get { return roostfile.targetType }
+  }
+
   init(_ r: Roostfile) {
-    roostfile            = r
-    sourceFiles          = scanSourcesDirectories(roostfile.sources)
+    roostfile = r
+
+    let (directories, files, nonMatching) = filterSources(roostfile.sources)
+
+    if nonMatching.count > 0 {
+      for item in nonMatching {
+        println("Failed to parse as file or directory: \(item)")
+      }
+      exit(1)
+    }
+
+    sourceFiles          = scanSourcesDirectories(directories) + files
     lastModificationDate = computeLastModificationDate(sourceFiles)
 
     // Initial all of our modules from the Roostfile's modules
     for (_, module) in roostfile.modules {
       modules.append(Package.Module(module, parent: self))
     }
+  }
+
+  /**
+    :returns: Three-tuple of directories, source files, and non-matching.
+  */
+  func filterSources(sources: [String]) -> ([String], [String], [String]) {
+    var directories = [String]()
+    var files       = [String]()
+    var nonMatching = [String]()
+
+    for sourceString in sources {
+      let source = sourceString as NSString
+
+      if source.hasSuffix("/") {
+        directories.append(source as String)
+      
+      } else if source.hasSuffix(".swift") {
+        files.append(source as String)
+      
+      } else {
+        nonMatching.append(source as String)
+      }
+    }
+
+    return (directories, files, nonMatching)
   }
 
   func scanSourcesDirectories(directories: [String]) -> [String] {

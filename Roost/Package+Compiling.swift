@@ -13,7 +13,16 @@ extension Package {
     return ["swiftc", "-sdk", sdkPath]
   }
 
+  private func checkPreconditions() {
+    if targetType == .Unknown {
+      println("Can't compile package with Unkown target type")
+      exit(2)
+    }
+  }
+
   func compile() {
+    checkPreconditions()
+
     var modulesCompiled = false
 
     for module in modules {
@@ -38,10 +47,6 @@ extension Package {
     // Compile all of the sources
     arguments.extend(sourceFiles)
 
-    // And set the location of the output executable
-    arguments.append("-o")
-    arguments.append(binFilePath)
-
     // Add any framework search paths
     for path in frameworkSearchPaths {
       // Compiler framework support
@@ -51,13 +56,26 @@ extension Package {
       arguments.append("-Xlinker -rpath -Xlinker @executable_path/../\(path)")
     }
 
-    // Set search path for the modules
-    arguments.append("-I build")
-    arguments.append("-L build")
+    // If we have built modules to include and link against
+    if roostfile.modules.count > 0 {
+      // Set search path for the modules
+      arguments.append("-I build")
+      arguments.append("-L build")
 
-    // Link the modules
-    for (_, module) in roostfile.modules {
-      arguments.append("-l\(module.name)")
+      // Link the modules
+      for (_, module) in roostfile.modules {
+        arguments.append("-l\(module.name)")
+      }
+    }
+
+    switch targetType {
+      case .Executable:
+        // And set the location of the output executable
+        arguments.append("-o")
+        arguments.append(binFilePath)
+
+      default:
+        assert(false, "Target type switch fell through")
     }
 
     announceAndRunTask("Compiling \(binFilePath)... ",

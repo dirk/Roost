@@ -6,6 +6,7 @@ sources:
   - Roost/
 frameworkSearchPaths:
   - vendor/Carthage/Build/Mac
+targetType: executable
 
 module:
   name: Tasker

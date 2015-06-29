@@ -6,12 +6,36 @@ private let commentToken = "#"
 let WhitespaceCharacterSet = NSCharacterSet.whitespaceCharacterSet()
 let WhitespaceAndNewlineCharacterSet = NSCharacterSet.whitespaceAndNewlineCharacterSet()
 
+enum TargetType: Printable {
+  case Unknown
+  case Executable
+  case Framework
+
+  var description: String {
+    switch self {
+      case .Unknown:    return "Unknown"
+      case .Executable: return "Executable"
+      case .Framework:  return "Framework"
+    }
+  }
+
+  static func fromString(string: String) -> TargetType? {
+    switch string.lowercaseString {
+      case "unknown":    return .Unknown
+      case "executable": return .Executable
+      case "framework":  return .Framework
+      default:           return nil
+    }
+  }
+}
+
 class Roostfile {
   var name: String!
   var directory: String!
-  var sources              = [String]()
-  var frameworkSearchPaths = [String]()
-  var modules              = Dictionary<String, Roostfile.Module>()
+  var sources                = [String]()
+  var frameworkSearchPaths   = [String]()
+  var modules                = Dictionary<String, Roostfile.Module>()
+  var targetType: TargetType = .Unknown
 
   func parseFromString(string: String) {
     let yaml = Yaml.load(string).value!
@@ -22,6 +46,7 @@ class Roostfile {
       "sources":              self.parseSources,
       "module":               self.parseModule,
       "frameworkSearchPaths": self.parseFrameworkSearchPaths,
+      "targetType":           self.parseTargetType,
     ]
     
     for (keyYaml, valueYaml) in yaml.dictionary! {
@@ -68,6 +93,20 @@ class Roostfile {
   func parseFrameworkSearchPaths(yaml: Yaml) {
     frameworkSearchPaths = yaml.array!.map { (y: Yaml) in
       return y.string!
+    }
+  }
+
+  func parseTargetType(yaml: Yaml) {
+    let typeString = yaml.string
+
+    if typeString == nil {
+      println("Invalid target type: expected string")
+    }
+
+    if let type = TargetType.fromString(typeString!) {
+      targetType = type
+    } else {
+      println("Invalid target type '\(typeString)'")
     }
   }
 
