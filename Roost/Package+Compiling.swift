@@ -31,17 +31,6 @@ extension Package {
       modulesCompiled = modulesCompiled || compiled
     }
 
-    let binFilePath = "bin/\(roostfile.name.lowercaseString)"
-    let binFileModificationDate = getFileModificationDate(binFilePath)
-
-    if let date = binFileModificationDate {
-      // Don't bother compiling if we haven't been modified since the last
-      // target was built
-      if !modulesCompiled && !lastModificationDate.isNewerThan(date) {
-        return
-      }
-    }
-
     var arguments = commonCompilerArguments()
 
     // Compile all of the sources
@@ -70,17 +59,64 @@ extension Package {
 
     switch targetType {
       case .Executable:
+        // First check for modification-times of the output executable
+        let binFilePath = "bin/\(roostfile.name.lowercaseString)"
+        let binFileModificationDate = getFileModificationDate(binFilePath)
+        if let date = binFileModificationDate {
+          // Don't bother compiling if we haven't been modified since the last
+          // target was built
+          if !modulesCompiled && !lastModificationDate.isNewerThan(date) {
+            return
+          }
+        }
+
         // And set the location of the output executable
         arguments.append("-o")
         arguments.append(binFilePath)
 
-      default:
-        assert(false, "Target type switch fell through")
-    }
+        announceAndRunTask("Compiling \(binFilePath)... ",
+                           arguments: ["-c", " ".join(arguments)],
+                           finished: "Compiled \(roostfile.name) to \(binFilePath)")
 
-    announceAndRunTask("Compiling \(binFilePath)... ",
+      case .Module:
+        compileStaticLibrary(arguments)
+        compileSwiftModule(arguments)
+
+      default:
+        assert(false, "Target type switch fell through: \(targetType)")
+    }
+  }
+
+  private func compileSwiftModule(baseArguments: [String]) {
+    var arguments = baseArguments
+
+    let modulePath = "build/\(roostfile.name).swiftmodule"
+
+    arguments.append("-emit-module-path \(modulePath)")
+
+    announceAndRunTask("Compiling \(modulePath)",
                        arguments: ["-c", " ".join(arguments)],
-                       finished: "Compiled \(roostfile.name) to \(binFilePath)")
+                       finished: "Created \(roostfile.name) module at \(modulePath)")
+  }
+
+  private func compileStaticLibrary(baseArguments: [String]) {
+    var arguments = baseArguments
+
+    let objectFilePath  = "build/tmp-\(roostfile.name).o"
+    let libraryFilePath = "build/lib\(roostfile.name).a"
+    arguments.append("-parse-as-library -emit-object")
+    arguments.append("-module-name \(roostfile.name)")
+    arguments.append("-o \(objectFilePath)")
+
+    announceAndRunTask("Compiling \(objectFilePath)... ",
+                       arguments: ["-c", " ".join(arguments)],
+                       finished: "Compiled \(roostfile.name) object to \(objectFilePath)")
+
+    let archive = "libtool -o \(libraryFilePath) \(objectFilePath)"
+
+    announceAndRunTask("Archiving \(libraryFilePath)... ",
+                       arguments: ["-c", archive],
+                       finished: "Created \(roostfile.name) archive at \(libraryFilePath)")
   }
 
 

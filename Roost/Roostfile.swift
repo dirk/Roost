@@ -10,12 +10,14 @@ enum TargetType: Printable {
   case Unknown
   case Executable
   case Framework
+  case Module
 
   var description: String {
     switch self {
       case .Unknown:    return "Unknown"
       case .Executable: return "Executable"
       case .Framework:  return "Framework"
+      case .Module:     return "Module"
     }
   }
 
@@ -24,6 +26,7 @@ enum TargetType: Printable {
       case "unknown":    return .Unknown
       case "executable": return .Executable
       case "framework":  return .Framework
+      case "module":     return .Module
       default:           return nil
     }
   }
