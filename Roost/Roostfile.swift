@@ -53,13 +53,15 @@ class Roostfile {
     ]
     
     for (keyYaml, valueYaml) in yaml.dictionary! {
-      let key = keyYaml.string!
-
-      if let action = map[key] {
-        action(valueYaml)
-
+      if let key = keyYaml.string {
+        if let action = map[key] {
+          action(valueYaml)
+          continue
+        } else {
+          println("Can't parse key '\(key)''")
+        }
       } else {
-        println("Can't parse key \(key)")
+        println("Can't parse key")
       }
     }
   }// parseFromString
@@ -84,11 +86,25 @@ class Roostfile {
 
   func parseModule(yaml: Yaml) {
     var module = Roostfile.Module()
+    var errored = false
 
-    module.name = yaml["name"].string!
-    module.sources = yaml["sources"].array!.map { (y: Yaml) in
-      return y.string!
+    if let name = yaml["name"].string {
+      module.name = name
+    } else {
+      println("Unable to parse module name")
+      errored = true
     }
+
+    if let sources = yaml["sources"].array {
+      module.sources = sources.map { (y: Yaml) in
+        return y.string!
+      }
+    } else {
+      println("Unable to parse module sources")
+      errored = true
+    }
+
+    if errored { return }
 
     modules[module.name] = module
   }
