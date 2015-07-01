@@ -96,9 +96,17 @@ class Roostfile {
     }
 
     if let sources = yaml["sources"].array {
-      module.sources = sources.map { (y: Yaml) in
-        return y.string!
+      var parsedSources = [String]()
+
+      for y in sources {
+        if let source = y.string {
+          parsedSources.append(source)
+        } else {
+          println("Unable to parse module source")
+        }
       }
+
+      module.sources = parsedSources
     } else {
       println("Unable to parse module sources")
       errored = true
