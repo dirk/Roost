@@ -38,6 +38,7 @@ class Roostfile {
   var sources                = [String]()
   var frameworkSearchPaths   = [String]()
   var modules                = Dictionary<String, Roostfile.Module>()
+  var dependencies           = Array<Roostfile.Dependency>()
   var targetType: TargetType = .Unknown
 
   func parseFromString(string: String) {
@@ -50,6 +51,7 @@ class Roostfile {
       "module":               self.parseModule,
       "frameworkSearchPaths": self.parseFrameworkSearchPaths,
       "targetType":           self.parseTargetType,
+      "dependencies":         self.parseDependencies,
     ]
     
     for (keyYaml, valueYaml) in yaml.dictionary! {
@@ -135,6 +137,30 @@ class Roostfile {
     } else {
       println("Invalid target type '\(typeString)'")
     }
+  }
+
+  func parseDependencies(yaml: Yaml) {
+    let deps = yaml.array
+
+    if deps == nil {
+      println("Dependencies must be an array"); exit(1)
+    }
+
+    for dep in deps! {
+      parseDependency(dep)
+    }
+  }
+
+  func parseDependency(yaml: Yaml) {
+    if let github = yaml["github"].string {
+      parseGithubDependency(github)
+    } else {
+      println("Invalid dependency format"); exit(1)
+    }
+  }
+
+  func parseGithubDependency(github: String) {
+    dependencies.append(Dependency(github: github))
   }
 
 

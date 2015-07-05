@@ -8,7 +8,5 @@ frameworkSearchPaths:
   - vendor/Carthage/Build/Mac
 targetType: executable
 
-module:
-  name: Tasker
-  sources:
-    - Tasker/
+dependencies:
+  - github: dirk/Tasker
