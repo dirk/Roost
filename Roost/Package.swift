@@ -19,10 +19,8 @@ class Package {
     let (directories, files, nonMatching) = filterSources(roostfile.sources)
 
     if nonMatching.count > 0 {
-      for item in nonMatching {
-        println("Failed to parse as file or directory: \(item)")
-      }
-      exit(1)
+      let items = ", ".join(nonMatching)
+      printAndExit("Failed to parse as file or directory: \(items)")
     }
 
     sourceFiles          = scanSourcesDirectories(directories) + files
@@ -96,8 +94,7 @@ class Package {
       let maybeDate: AnyObject? = attributes![NSFileModificationDate]
 
       if maybeDate == nil {
-        println("Modification date not found for file: \(path)")
-        exit(1)
+        printAndExit("Modification date not found for file: \(path)")
       }
 
       let date = maybeDate! as! NSDate

@@ -4,6 +4,19 @@ public func currentDirectoryPath() -> String {
   return (NSFileManager().currentDirectoryPath)
 }
 
+public func readFile(path: String) -> String {
+  let url = NSURL(fileURLWithPath: path)!
+  var error: NSError?
+
+  let contents = NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding, error: &error)
+
+  if contents == nil {
+    let errorString = error!.localizedDescription
+    printAndExit("Error reading file: \(errorString)")
+  }
+  return contents! as String
+}
+
 public func printAndExit(string: String, status: Int32 = 1) {
   println(string)
   exit(status)

@@ -25,8 +25,7 @@ extension Package {
 
   private func checkPreconditions() {
     if targetType == .Unknown {
-      println("Can't compile package with Unkown target type")
-      exit(2)
+      printAndExit("Can't compile package with Unkown target type")
     }
   }// checkPreconditions
 
@@ -38,7 +37,7 @@ extension Package {
                                                       error: nil)
 
       if !created {
-        println("Failed to create vendor directory: \(vendorDirectory)"); exit(1)
+        printAndExit("Failed to create vendor directory: \(vendorDirectory)")
       }
     }
 
@@ -67,18 +66,6 @@ extension Package {
                        arguments: ["-c", commands],
                        finished: "Pulled dependency \(dependency.shortName)")
   }// pullDependency
-
-  private func readFile(path: String) -> String {
-    let url = NSURL(fileURLWithPath: path)!
-    var error: NSError?
-
-    let contents = NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding, error: &error)
-
-    if contents == nil {
-      println(error); exit(1)
-    }
-    return contents! as String
-  }
 
   private func compileDependency(dependency: Roostfile.Dependency, _ directory: String) {
     let path = "\(directory)/Roostfile.yaml"
