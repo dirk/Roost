@@ -12,6 +12,18 @@ extension Package {
   var frameworkSearchPaths: [String] {
     get { return roostfile.frameworkSearchPaths }
   }
+  var mustRecompile: Bool {
+    get {
+      let environment = NSProcessInfo.processInfo().environment
+      let value = environment["MUST_RECOMPILE"] as! NSString?
+
+      if let flag = value {
+        return flag.lowercaseString != "no"
+      } else {
+        return false
+      }
+    }
+  }
 
   private func commonCompilerArguments() -> [String] {
     let sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
@@ -158,10 +170,12 @@ extension Package {
         // First check for modification-times of the output executable
         let binFilePath = "bin/\(roostfile.name.lowercaseString)"
         let binFileModificationDate = getFileModificationDate(binFilePath)
+
         if let date = binFileModificationDate {
+          let targetNewer = date.isNewerThan(lastModificationDate)
           // Don't bother compiling if we haven't been modified since the last
           // target was built
-          if !modulesCompiled && !lastModificationDate.isNewerThan(date) {
+          if !modulesCompiled && targetNewer && !mustRecompile {
             return
           }
         }
