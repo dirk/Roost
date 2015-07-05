@@ -1,17 +1,24 @@
 import Foundation
 import Tasker
 
+enum CompilationResult {
+  case Skipped
+  case Compiled
+
+  var description: String {
+    switch self {
+      case .Skipped:  return "Skipped"
+      case .Compiled: return "Compiled"
+    }
+  }
+}
+
 extension Package {
 
-  var fileManager: NSFileManager {
-    get { return NSFileManager.defaultManager() }
-  }
-  var vendorDirectory: String {
-    get { return "\(roostfile.directory)/vendor" }
-  }
-  var frameworkSearchPaths: [String] {
-    get { return roostfile.frameworkSearchPaths }
-  }
+  var fileManager: NSFileManager     { get { return NSFileManager.defaultManager() } }
+  var vendorDirectory: String        { get { return "\(roostfile.directory)/vendor" } }
+  var frameworkSearchPaths: [String] { get { return roostfile.frameworkSearchPaths } }
+
   var mustRecompile: Bool {
     get {
       let environment = NSProcessInfo.processInfo().environment
@@ -79,7 +86,7 @@ extension Package {
                        finished: "Pulled dependency \(dependency.shortName)")
   }// pullDependency
 
-  private func compileDependency(dependency: Roostfile.Dependency, _ directory: String) {
+  private func compileDependency(dependency: Roostfile.Dependency, _ directory: String) -> CompilationResult {
     let path = "\(directory)/Roostfile.yaml"
     let contents = readFile(path)
 
@@ -87,12 +94,12 @@ extension Package {
     dependencyRoostfile.directory = directory
     dependencyRoostfile.parseFromString(contents)
 
-    let dependencyPackage = dependencyRoostfile.asPackage()
-
-    dependencyPackage.compile()
-
     // Save the Roostfile of the dependency for later
     dependency.roostfile = dependencyRoostfile
+
+    let dependencyPackage = dependencyRoostfile.asPackage()
+
+    return dependencyPackage.compile()
   }// compileDependency
 
 
@@ -110,7 +117,7 @@ extension Package {
   }// ensureHaveDependency
 
 
-  func compile() {
+  func compile() -> CompilationResult {
     // TODO: Have it return a Bool indicating whether dependencies were
     //       changed to let us know if we need to recompile
     ensureHaveDependencies()
@@ -120,7 +127,7 @@ extension Package {
     var modulesCompiled = false
 
     for module in modules {
-      let compiled = compileModule(module)
+      let compiled = (compileModule(module) == .Compiled)
 
       modulesCompiled = modulesCompiled || compiled
     }
@@ -176,7 +183,7 @@ extension Package {
           // Don't bother compiling if we haven't been modified since the last
           // target was built
           if !modulesCompiled && targetNewer && !mustRecompile {
-            return
+            return .Skipped
           }
         }
 
@@ -191,8 +198,11 @@ extension Package {
       case .Module:
         let swiftModuleTarget = modulePathForPackage()
 
-        if !modulesCompiled && !needsRecompilation(sourceFiles, swiftModuleTarget) {
-          break
+        if !modulesCompiled &&
+           !needsRecompilation(sourceFiles, swiftModuleTarget) &&
+           !mustRecompile
+        {
+          return .Skipped
         }
         // Do need to recompile
         compileStaticLibrary(arguments)
@@ -201,7 +211,9 @@ extension Package {
       default:
         assert(false, "Target type switch fell through: \(targetType)")
     }
-  }
+
+    return .Compiled
+  }// compile
 
   private func compileSwiftModule(baseArguments: [String]) {
     var arguments = baseArguments
@@ -276,14 +288,14 @@ extension Package {
     NSFileManager.defaultManager().removeItemAtPath(temporaryObjectPath, error: &error)
   }
 
-  func compileModule(module: Package.Module) -> Bool {
+  func compileModule(module: Package.Module) -> CompilationResult {
     // First check if we even need to compile it
     let libraryPath = libraryFilePathForModule(module)
     let libraryModificationDate = getFileModificationDate(libraryPath)
 
     if let date = libraryModificationDate {
       if !module.lastModificationDate.isNewerThan(date) {
-        return false
+        return .Skipped
       }
     }
 
@@ -296,7 +308,7 @@ extension Package {
     // Compile the native library
     compileNativeModuleForModule(arguments, module)
 
-    return true
+    return .Compiled
   }
 
   func needsRecompilation(sources: [String], _ target: String) -> Bool {
