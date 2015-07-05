@@ -5,7 +5,8 @@ before_install:
   - "sudo xcode-select --install || true"
   - "brew install carthage"
   - "cd vendor && carthage bootstrap --platform mac"
-install: "cd $TRAVIS_BUILD_DIR && make"
+  - "cd $TRAVIS_BUILD_DIR"
+install: "make"
 
 before_script: "touch Roost/main.swift"
 script: "bin/roost"

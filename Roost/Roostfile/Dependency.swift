@@ -34,7 +34,7 @@ extension Roostfile {
     }
 
     func sourceURL() -> String {
-      return "git@github.com:\(github!).git"
+      return "https://github.com/\(github!).git"
     }
 
     func localDirectoryName() -> String {
