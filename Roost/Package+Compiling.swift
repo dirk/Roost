@@ -195,7 +195,8 @@ extension Package {
 
     task.launchAndWait()
 
-    print("\r") // Reset to beginning of line
+    print("\u{001B}[2K") // Clear the whole line
+    print("\r") // Reset cursor to the beginning of line
 
     if task.hasAnyOutput() {
       println(task.outputString)
