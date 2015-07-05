@@ -9,7 +9,6 @@ extension Package {
   var vendorDirectory: String {
     get { return "\(roostfile.directory)/vendor" }
   }
-
   var frameworkSearchPaths: [String] {
     get { return roostfile.frameworkSearchPaths }
   }
@@ -18,6 +17,10 @@ extension Package {
     let sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
 
     return ["swiftc", "-sdk", sdkPath]
+  }
+
+  private func modulePathForPackage() -> String {
+    return "\(directory)/build/\(roostfile.name).swiftmodule"
   }
 
   private func checkPreconditions() {
@@ -48,9 +51,9 @@ extension Package {
     let sourceURL = dependency.sourceURL()
     let cloneCommand = "git clone -q \(sourceURL) \(directory)"
 
-    announceAndRunTask("Cloning dependency \(dependency.shortname)",
+    announceAndRunTask("Cloning dependency \(dependency.shortName)... ",
                        arguments: ["-c", cloneCommand],
-                       finished: "Cloned dependency \(dependency.shortname)")
+                       finished: "Cloned dependency \(dependency.shortName)")
   }
 
   private func pullDependency(dependency: Roostfile.Dependency, _ directory: String) {
@@ -58,12 +61,41 @@ extension Package {
       "cd \(directory)",
       "git pull -q origin master",
     ]
-    let commands = " ".join(commandsArray)
+    let commands = " && ".join(commandsArray)
 
-    announceAndRunTask("Pulling dependency \(dependency.shortname)",
+    announceAndRunTask("Pulling dependency \(dependency.shortName)... ",
                        arguments: ["-c", commands],
-                       finished: "Pulled dependency \(dependency.shortname)")
+                       finished: "Pulled dependency \(dependency.shortName)")
+  }// pullDependency
+
+  private func readFile(path: String) -> String {
+    let url = NSURL(fileURLWithPath: path)!
+    var error: NSError?
+
+    let contents = NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding, error: &error)
+
+    if contents == nil {
+      println(error); exit(1)
+    }
+    return contents! as String
   }
+
+  private func compileDependency(dependency: Roostfile.Dependency, _ directory: String) {
+    let path = "\(directory)/Roostfile.yaml"
+    let contents = readFile(path)
+
+    let dependencyRoostfile = Roostfile()
+    dependencyRoostfile.directory = directory
+    dependencyRoostfile.parseFromString(contents)
+
+    let dependencyPackage = dependencyRoostfile.asPackage()
+
+    dependencyPackage.compile()
+
+    // Save the Roostfile of the dependency for later
+    dependency.roostfile = dependencyRoostfile
+  }// compileDependency
+
 
   private func ensureHaveDependency(dependency: Roostfile.Dependency) {
     let directory = "\(vendorDirectory)/\(dependency.localDirectoryName())"
@@ -71,13 +103,19 @@ extension Package {
     if !fileManager.fileExistsAtPath(directory) {
       cloneDependency(dependency, directory)
     } else {
-      pullDependency(dependency, directory)
+      // TODO: Add flag to enable pulling and such
+      // pullDependency(dependency, directory)
     }
+
+    compileDependency(dependency, directory)
   }// ensureHaveDependency
 
 
   func compile() {
+    // TODO: Have it return a Bool indicating whether dependencies were
+    //       changed to let us know if we need to recompile
     ensureHaveDependencies()
+
     checkPreconditions()
 
     var modulesCompiled = false
@@ -114,6 +152,20 @@ extension Package {
       }
     }
 
+    // Include and link against dependencies
+    if roostfile.dependencies.count > 0 {
+      for dep in roostfile.dependencies {
+        let directory = dep.roostfile!.directory
+        let name = dep.moduleName
+
+        let buildPath = "\(directory)/build"
+        arguments.append("-I \(buildPath) -L \(buildPath)")
+
+        // Link the dependency's module
+        arguments.append("-l\(name)")
+      }
+    }
+
     switch targetType {
       case .Executable:
         // First check for modification-times of the output executable
@@ -136,6 +188,12 @@ extension Package {
                            finished: "Compiled \(roostfile.name) to \(binFilePath)")
 
       case .Module:
+        let swiftModuleTarget = modulePathForPackage()
+
+        if !modulesCompiled && !needsRecompilation(sourceFiles, swiftModuleTarget) {
+          break
+        }
+        // Do need to recompile
         compileStaticLibrary(arguments)
         compileSwiftModule(arguments)
 
@@ -147,7 +205,7 @@ extension Package {
   private func compileSwiftModule(baseArguments: [String]) {
     var arguments = baseArguments
 
-    let modulePath = "build/\(roostfile.name).swiftmodule"
+    let modulePath = modulePathForPackage()
 
     arguments.append("-emit-module-path \(modulePath)")
 
@@ -159,8 +217,8 @@ extension Package {
   private func compileStaticLibrary(baseArguments: [String]) {
     var arguments = baseArguments
 
-    let objectFilePath  = "build/tmp-\(roostfile.name).o"
-    let libraryFilePath = "build/lib\(roostfile.name).a"
+    let objectFilePath  = "\(directory)/build/tmp-\(roostfile.name).o"
+    let libraryFilePath = "\(directory)/build/lib\(roostfile.name).a"
     arguments.append("-parse-as-library -emit-object")
     arguments.append("-module-name \(roostfile.name)")
     arguments.append("-o \(objectFilePath)")
@@ -180,11 +238,11 @@ extension Package {
 // Compiling modules
 
   func libraryFilePathForModule(module: Package.Module) -> String {
-    return "build/lib\(module.name).a"
+    return "\(directory)/build/lib\(module.name).a"
   }
 
   func swiftModuleFilePathForModule(module: Package.Module) -> String {
-    return "build/\(module.name).swiftmodule"
+    return "\(directory)/build/\(module.name).swiftmodule"
   }
 
   func compileSwiftModuleForModule(baseArguments: [String], _ module: Package.Module) {
@@ -240,6 +298,18 @@ extension Package {
     return true
   }
 
+  func needsRecompilation(sources: [String], _ target: String) -> Bool {
+    // First check if we even need to compile it
+    let sourcesDate = computeLastModificationDate(sources)
+    let targetModificationDate = getFileModificationDate(target)
+
+    if let date = targetModificationDate {
+      if date.isNewerThan(sourcesDate) {
+        return false
+      }
+    }
+    return true
+  }
 
 // Internal utitlies
 
