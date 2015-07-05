@@ -3,6 +3,13 @@ import Tasker
 
 extension Package {
 
+  var fileManager: NSFileManager {
+    get { return NSFileManager.defaultManager() }
+  }
+  var vendorDirectory: String {
+    get { return "\(roostfile.directory)/vendor" }
+  }
+
   var frameworkSearchPaths: [String] {
     get { return roostfile.frameworkSearchPaths }
   }
@@ -18,9 +25,59 @@ extension Package {
       println("Can't compile package with Unkown target type")
       exit(2)
     }
+  }// checkPreconditions
+
+  private func ensureHaveDependencies() {
+    if !fileManager.fileExistsAtPath(vendorDirectory) {
+      let created = fileManager.createDirectoryAtPath(vendorDirectory,
+                                                      withIntermediateDirectories: true,
+                                                      attributes: nil,
+                                                      error: nil)
+
+      if !created {
+        println("Failed to create vendor directory: \(vendorDirectory)"); exit(1)
+      }
+    }
+
+    for dependency in roostfile.dependencies {
+      ensureHaveDependency(dependency)
+    }
+  }// ensureHaveDependencies
+
+  private func cloneDependency(dependency: Roostfile.Dependency, _ directory: String) {
+    let sourceURL = dependency.sourceURL()
+    let cloneCommand = "git clone -q \(sourceURL) \(directory)"
+
+    announceAndRunTask("Cloning dependency \(dependency.shortname)",
+                       arguments: ["-c", cloneCommand],
+                       finished: "Cloned dependency \(dependency.shortname)")
   }
 
+  private func pullDependency(dependency: Roostfile.Dependency, _ directory: String) {
+    let commandsArray = [
+      "cd \(directory)",
+      "git pull -q origin master",
+    ]
+    let commands = " ".join(commandsArray)
+
+    announceAndRunTask("Pulling dependency \(dependency.shortname)",
+                       arguments: ["-c", commands],
+                       finished: "Pulled dependency \(dependency.shortname)")
+  }
+
+  private func ensureHaveDependency(dependency: Roostfile.Dependency) {
+    let directory = "\(vendorDirectory)/\(dependency.localDirectoryName())"
+
+    if !fileManager.fileExistsAtPath(directory) {
+      cloneDependency(dependency, directory)
+    } else {
+      pullDependency(dependency, directory)
+    }
+  }// ensureHaveDependency
+
+
   func compile() {
+    ensureHaveDependencies()
     checkPreconditions()
 
     var modulesCompiled = false
