@@ -6,7 +6,13 @@ before_install:
   - "brew install carthage"
   - "cd vendor && carthage bootstrap --platform mac"
   - "cd $TRAVIS_BUILD_DIR"
+
 install: "make"
 
-before_script: "touch Roost/main.swift"
+before_script:
+  # Ensure it needs to compile something
+  - "touch $TRAVIS_BUILD_DIR/Roost/main.swift"
+  - "echo $TRAVIS_BUILD_DIR/Roost/main.swift"
+
+
 script: "bin/roost"
