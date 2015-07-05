@@ -9,6 +9,9 @@ class Package {
   var targetType: TargetType {
     get { return roostfile.targetType }
   }
+  var directory: String {
+    get { return roostfile.directory }
+  }
 
   init(_ r: Roostfile) {
     roostfile = r
@@ -46,7 +49,8 @@ class Package {
         directories.append(source as String)
       
       } else if source.hasSuffix(".swift") {
-        files.append(source as String)
+        let expandedPath = "\(directory)/\(source)"
+        files.append(expandedPath)
       
       } else {
         nonMatching.append(source as String)
@@ -82,10 +86,19 @@ class Package {
 
     for path in paths {
       let attributes = manager.attributesOfItemAtPath(path, error: &error)
-      if attributes == nil { continue }
+
+      if attributes == nil {
+        println("Failed to lookup attributes for file: \(path)")
+        println(error)
+        exit(1)
+      }
 
       let maybeDate: AnyObject? = attributes![NSFileModificationDate]
-      if maybeDate == nil { continue }
+
+      if maybeDate == nil {
+        println("Modification date not found for file: \(path)")
+        exit(1)
+      }
 
       let date = maybeDate! as! NSDate
       dates.append(date)
