@@ -1,3 +1,5 @@
+[![Build Status][travis-image]][travis-url]
+
 # Roost
 
 A very basic WIP dependency manager and build tool for Swift.
@@ -19,3 +21,6 @@ bin/roost
 # License
 
 Licensed under the 3-clause BSD license. See [LICENSE](LICENSE) for details.
+
+[travis-image]: https://img.shields.io/travis/dirk/Roost/master.svg?style=flat-square
+[travis-url]: https://travis-ci.org/dirk/Roost
