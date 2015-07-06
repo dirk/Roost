@@ -1,28 +1,25 @@
 import Foundation
+import CommandLine
 import SwiftGit2
 
-func main() {
-  let fileManager = NSFileManager()
-
+private func findRoostfile() -> (String, String) {
   let cwd = currentDirectoryPath()
   let path = NSString.pathWithComponents([cwd, "Roostfile.yaml"])
 
-  if !fileManager.fileExistsAtPath(path) {
+  if !NSFileManager.defaultManager().fileExistsAtPath(path) {
     printAndExit("Missing Roostfile in '\(cwd)'")
   }
 
-  let pathURL = NSURL(fileURLWithPath: path)!
+  return (cwd, path)
+}
 
-  var error: NSError?
-  let contents = NSString(contentsOfURL: pathURL, encoding: NSUTF8StringEncoding, error: &error)
-
-  if contents == nil {
-    println(error); exit(1)
-  }
+func main() {
+  let (directory, path) = findRoostfile()
+  let contents = readFile(path)
 
   let roostfile = Roostfile()
-  roostfile.directory = cwd
-  roostfile.parseFromString(contents! as String)
+  roostfile.directory = directory
+  roostfile.parseFromString(contents as String)
 
   // roostfile.inspect()
 
