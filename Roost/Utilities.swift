@@ -33,6 +33,30 @@ public func getFileModificationDate(path: String) -> NSDate? {
   return maybeDate as! NSDate?
 }
 
+private var SDKPath: String!
+
+public func getSDKPath() -> String {
+  if let path = SDKPath {
+    return path
+  }
+
+  // TODO: Implement generalized NSTask abstraction struct
+  let outputPipe = NSPipe()
+  let task = NSTask()
+  task.launchPath = "/bin/sh"
+  task.arguments = ["-c", "xcrun --show-sdk-path"]
+  task.standardOutput = outputPipe
+
+  task.launch()
+
+  let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+  let path = NSString(data: outputData, encoding: NSUTF8StringEncoding) as! String
+
+  // Memoize and return
+  SDKPath = path
+  return path
+}
+
 extension NSDate {
   func isNewerThan(other: NSDate) -> Bool {
     return (self.compare(other) == NSComparisonResult.OrderedDescending) ? true : false

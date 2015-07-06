@@ -13,23 +13,20 @@ enum CompilationResult {
   }
 }
 
-extension Package {
+class Builder {
+
+  var package: Package
+  var buildDirectory: String!
 
   var fileManager: NSFileManager     { get { return NSFileManager.defaultManager() } }
-  var vendorDirectory: String        { get { return "\(roostfile.directory)/vendor" } }
+
+  var roostfile: Roostfile           { get { return package.roostfile } }
   var frameworkSearchPaths: [String] { get { return roostfile.frameworkSearchPaths } }
+  var vendorDirectory: String        { get { return "\(roostfile.directory)/vendor" } }
 
-  var mustRecompile: Bool {
-    get {
-      let environment = NSProcessInfo.processInfo().environment
-      let value = environment["MUST_RECOMPILE"] as! NSString?
-
-      if let flag = value {
-        return flag.lowercaseString != "no"
-      } else {
-        return false
-      }
-    }
+  init(_ aPackage: Package) {
+    package = aPackage
+    buildDirectory = "\(package.directory)/build"
   }
 
   private func commonCompilerArguments() -> [String] {
@@ -39,11 +36,11 @@ extension Package {
   }
 
   private func modulePathForPackage() -> String {
-    return "\(directory)/build/\(roostfile.name).swiftmodule"
+    return "\(buildDirectory)/\(roostfile.name).swiftmodule"
   }
 
   private func checkPreconditions() {
-    if targetType == .Unknown {
+    if package.targetType == .Unknown {
       printAndExit("Can't compile package with Unkown target type")
     }
   }// checkPreconditions
@@ -98,8 +95,9 @@ extension Package {
     dependency.roostfile = dependencyRoostfile
 
     let dependencyPackage = dependencyRoostfile.asPackage()
+    let dependencyBuilder = Builder(dependencyPackage)
 
-    return dependencyPackage.compile()
+    return dependencyBuilder.compile()
   }// compileDependency
 
 
@@ -126,7 +124,7 @@ extension Package {
 
     var modulesCompiled = false
 
-    for module in modules {
+    for module in package.modules {
       let compiled = (compileModule(module) == .Compiled)
 
       modulesCompiled = modulesCompiled || compiled
@@ -135,7 +133,7 @@ extension Package {
     var arguments = commonCompilerArguments()
 
     // Compile all of the sources
-    arguments.extend(sourceFiles)
+    arguments.extend(package.sourceFiles)
 
     // Add any framework search paths
     for path in frameworkSearchPaths {
@@ -172,17 +170,17 @@ extension Package {
       }
     }
 
-    switch targetType {
+    switch package.targetType {
       case .Executable:
         // First check for modification-times of the output executable
         let binFilePath = "bin/\(roostfile.name.lowercaseString)"
         let binFileModificationDate = getFileModificationDate(binFilePath)
 
         if let date = binFileModificationDate {
-          let targetNewer = date.isNewerThan(lastModificationDate)
+          let targetNewer = date.isNewerThan(package.lastModificationDate)
           // Don't bother compiling if we haven't been modified since the last
           // target was built
-          if !modulesCompiled && targetNewer && !mustRecompile {
+          if !modulesCompiled && targetNewer && !Flags.MustRecompile {
             return .Skipped
           }
         }
@@ -199,8 +197,8 @@ extension Package {
         let swiftModuleTarget = modulePathForPackage()
 
         if !modulesCompiled &&
-           !needsRecompilation(sourceFiles, swiftModuleTarget) &&
-           !mustRecompile
+           !needsRecompilation(package.sourceFiles, swiftModuleTarget) &&
+           !Flags.MustRecompile
         {
           return .Skipped
         }
@@ -209,7 +207,7 @@ extension Package {
         compileSwiftModule(arguments)
 
       default:
-        assert(false, "Target type switch fell through: \(targetType)")
+        assert(false, "Target type switch fell through: \(package.targetType)")
     }
 
     return .Compiled
@@ -230,8 +228,8 @@ extension Package {
   private func compileStaticLibrary(baseArguments: [String]) {
     var arguments = baseArguments
 
-    let objectFilePath  = "\(directory)/build/tmp-\(roostfile.name).o"
-    let libraryFilePath = "\(directory)/build/lib\(roostfile.name).a"
+    let objectFilePath  = "\(buildDirectory)/tmp-\(roostfile.name).o"
+    let libraryFilePath = "\(buildDirectory)/lib\(roostfile.name).a"
     arguments.append("-parse-as-library -emit-object")
     arguments.append("-module-name \(roostfile.name)")
     arguments.append("-o \(objectFilePath)")
@@ -251,11 +249,11 @@ extension Package {
 // Compiling modules
 
   func libraryFilePathForModule(module: Package.Module) -> String {
-    return "\(directory)/build/lib\(module.name).a"
+    return "\(buildDirectory)/lib\(module.name).a"
   }
 
   func swiftModuleFilePathForModule(module: Package.Module) -> String {
-    return "\(directory)/build/\(module.name).swiftmodule"
+    return "\(buildDirectory)/\(module.name).swiftmodule"
   }
 
   func compileSwiftModuleForModule(baseArguments: [String], _ module: Package.Module) {
@@ -313,7 +311,7 @@ extension Package {
 
   func needsRecompilation(sources: [String], _ target: String) -> Bool {
     // First check if we even need to compile it
-    let sourcesDate = computeLastModificationDate(sources)
+    let sourcesDate = package.computeLastModificationDate(sources)
     let targetModificationDate = getFileModificationDate(target)
 
     if let date = targetModificationDate {
