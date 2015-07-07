@@ -9,4 +9,6 @@ before_install:
 
 install: "make"
 
-script: "MUST_RECOMPILE=yes bin/roost"
+before_script: "bin/roost update"
+
+script: "bin/roost build -B"
