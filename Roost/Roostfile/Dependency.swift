@@ -57,7 +57,7 @@ extension Roostfile {
       if exists {
         pull(directory)
       } else {
-        update(directory)
+        clone(directory)
       }
     }
 
