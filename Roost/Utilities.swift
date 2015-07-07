@@ -1,4 +1,5 @@
 import Foundation
+import Tasker
 
 public func currentDirectoryPath() -> String {
   return (NSFileManager().currentDirectoryPath)
@@ -32,6 +33,31 @@ public func getFileModificationDate(path: String) -> NSDate? {
   let maybeDate: AnyObject? = attributes![NSFileModificationDate]
   return maybeDate as! NSDate?
 }
+
+func announceAndRunTask(announcement: String, #arguments: [String], #finished: String) {
+  print(announcement)
+  stdoutFlush()
+
+  let task = Task("/bin/sh")
+  task.arguments = arguments
+
+  task.launchAndWait()
+
+  print("\u{001B}[2K") // Clear the whole line
+  print("\r") // Reset cursor to the beginning of line
+
+  if task.hasAnyOutput() {
+    println(task.outputString)
+    println(task.errorString)
+  } else {
+    println(finished)
+  }
+}
+
+private func stdoutFlush() {
+  fflush(__stdoutp)
+}
+
 
 private var SDKPath: String!
 

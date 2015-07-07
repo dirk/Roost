@@ -4,9 +4,9 @@
 name: Roost
 sources:
   - Roost/
-frameworkSearchPaths:
+framework_search_paths:
   - vendor/Carthage/Build/Mac
-targetType: executable
+target_type: executable
 
 dependencies:
   - github: dirk/Tasker

@@ -2,6 +2,8 @@ import Foundation
 
 class Package {
   var roostfile: Roostfile
+    
+  var directory: String
   var sourceFiles: [String] = []
   var lastModificationDate: NSDate = NSDate()
   var modules: [Package.Module] = []
@@ -9,12 +11,13 @@ class Package {
   var targetType: TargetType {
     get { return roostfile.targetType }
   }
-  var directory: String {
-    get { return roostfile.directory }
+  var vendorDirectory: String {
+    get { return "\(directory)/vendor" }
   }
 
   init(_ r: Roostfile) {
     roostfile = r
+    directory = roostfile.directory
 
     let (directories, files, nonMatching) = filterSources(roostfile.sources)
 
@@ -33,6 +36,11 @@ class Package {
   }
 
   /**
+    Given a list of source files and/or directories, determine the set
+    of usable directories, files, and invalid paths.
+
+    :param: sources Files and directories
+
     :returns: Three-tuple of directories, source files, and non-matching.
   */
   func filterSources(sources: [String]) -> ([String], [String], [String]) {

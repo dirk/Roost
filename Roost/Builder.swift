@@ -1,5 +1,4 @@
 import Foundation
-import Tasker
 
 enum CompilationResult {
   case Skipped
@@ -21,8 +20,8 @@ class Builder {
   var fileManager: NSFileManager     { get { return NSFileManager.defaultManager() } }
 
   var roostfile: Roostfile           { get { return package.roostfile } }
+  var vendorDirectory: String        { get { return package.vendorDirectory } }
   var frameworkSearchPaths: [String] { get { return roostfile.frameworkSearchPaths } }
-  var vendorDirectory: String        { get { return "\(roostfile.directory)/vendor" } }
 
   init(_ aPackage: Package) {
     package = aPackage
@@ -62,27 +61,6 @@ class Builder {
     }
   }// ensureHaveDependencies
 
-  private func cloneDependency(dependency: Roostfile.Dependency, _ directory: String) {
-    let sourceURL = dependency.sourceURL()
-    let cloneCommand = "git clone -q \(sourceURL) \(directory)"
-
-    announceAndRunTask("Cloning dependency \(dependency.shortName)... ",
-                       arguments: ["-c", cloneCommand],
-                       finished: "Cloned dependency \(dependency.shortName)")
-  }
-
-  private func pullDependency(dependency: Roostfile.Dependency, _ directory: String) {
-    let commandsArray = [
-      "cd \(directory)",
-      "git pull -q origin master",
-    ]
-    let commands = " && ".join(commandsArray)
-
-    announceAndRunTask("Pulling dependency \(dependency.shortName)... ",
-                       arguments: ["-c", commands],
-                       finished: "Pulled dependency \(dependency.shortName)")
-  }// pullDependency
-
   private func compileDependency(dependency: Roostfile.Dependency, _ directory: String) -> CompilationResult {
     let path = "\(directory)/Roostfile.yaml"
     let contents = readFile(path)
@@ -102,14 +80,18 @@ class Builder {
 
 
   private func ensureHaveDependency(dependency: Roostfile.Dependency) {
-    let directory = "\(vendorDirectory)/\(dependency.localDirectoryName())"
+    let directory = dependency.inLocalDirectory(vendorDirectory)
 
     if !fileManager.fileExistsAtPath(directory) {
-      cloneDependency(dependency, directory)
-    } else {
-      // TODO: Add flag to enable pulling and such
-      // pullDependency(dependency, directory)
+      printAndExit("Missing dependency \(dependency.shortName)")
     }
+
+    // if !fileManager.fileExistsAtPath(directory) {
+    //   cloneDependency(dependency, directory)
+    // } else {
+    //   // TODO: Add flag to enable pulling and such
+    //   // pullDependency(dependency, directory)
+    // }
 
     compileDependency(dependency, directory)
   }// ensureHaveDependency
@@ -323,30 +305,6 @@ class Builder {
   }
 
 // Internal utitlies
-
-  func announceAndRunTask(announcement: String, arguments: [String], finished: String) {
-    print(announcement)
-    stdoutFlush()
-
-    let task = Task("/bin/sh")
-    task.arguments = arguments
-
-    task.launchAndWait()
-
-    print("\u{001B}[2K") // Clear the whole line
-    print("\r") // Reset cursor to the beginning of line
-
-    if task.hasAnyOutput() {
-      println(task.outputString)
-      println(task.errorString)
-    } else {
-      println(finished)
-    }
-  }
-
-  private func stdoutFlush() {
-    fflush(__stdoutp)
-  }
 
   private func readPipeToString(pipe: NSPipe) -> NSString {
     let data = pipe.fileHandleForReading.readDataToEndOfFile()

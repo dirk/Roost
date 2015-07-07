@@ -21,14 +21,45 @@ class Runner {
     options = Array(Process.arguments[2..<argumentsCount])
 
     switch command {
-      case "build":
-        build()
-      default:
-        printAndExit("Invalid command: '\(command)'")
+      case "build":  build()
+      case "update": update()
+      default:       printAndExit("Invalid command: '\(command)'")
     }
   }
 
-  func parseWithOptions(commandOptions: Option...) {
+  private func build() {
+    parseOptionsForBuild()
+
+    let roostfile = parseRoostfile()
+    
+    // roostfile.inspect()
+
+    let package = roostfile.asPackage()
+    let builder = Builder(package)
+
+    builder.compile()
+  }
+
+  private func update() {
+    let roostfile = parseRoostfile()
+    let package   = roostfile.asPackage()
+
+    let vendorDirectory = package.vendorDirectory
+
+    for dependency in roostfile.dependencies {
+      let directory = dependency.inLocalDirectory(vendorDirectory)
+
+      dependency.update(directory)
+    }
+  }
+
+
+// Option parsing
+
+  /**
+    Utility for parsing the command-line options
+  */
+  private func parseWithOptions(commandOptions: Option...) {
     let cli = CommandLine(arguments: options)
 
     cli.addOptions(commandOptions)
@@ -40,7 +71,10 @@ class Runner {
     }
   }
 
-  func parseOptionsForBuild() {
+  /**
+    Parse the command-line option arguments for the `build` command.
+  */
+  private func parseOptionsForBuild() {
     let mustRecompile = BoolOption(shortFlag: "B",
                                    longFlag: "rebuild",
                                    helpMessage: "Rebuild package")
@@ -50,23 +84,8 @@ class Runner {
     Flags.MustRecompile = mustRecompile.value
   }
 
-  func build() {
-    parseOptionsForBuild()
 
-    let (directory, path) = findRoostfile()
-    let contents = readFile(path)
-
-    let roostfile = Roostfile()
-    roostfile.directory = directory
-    roostfile.parseFromString(contents as String)
-
-    // roostfile.inspect()
-
-    let package = roostfile.asPackage()
-    let builder = Builder(package)
-
-    builder.compile()
-  }
+// Utility functions
 
   private func findRoostfile() -> (String, String) {
     let cwd = currentDirectoryPath()
@@ -77,6 +96,17 @@ class Runner {
     }
 
     return (cwd, path)
+  }
+
+  private func parseRoostfile() -> Roostfile {
+    let (directory, path) = findRoostfile()
+    let contents = readFile(path)
+
+    let roostfile = Roostfile()
+    roostfile.directory = directory
+    roostfile.parseFromString(contents as String)
+
+    return roostfile
   }
 
   // private func initializeFlags() {

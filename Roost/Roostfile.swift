@@ -46,12 +46,12 @@ class Roostfile {
 
     // Map names to processors
     let map = [
-      "name":                 self.parseName,
-      "sources":              self.parseSources,
-      "module":               self.parseModule,
-      "frameworkSearchPaths": self.parseFrameworkSearchPaths,
-      "targetType":           self.parseTargetType,
-      "dependencies":         self.parseDependencies,
+      "name":                   self.parseName,
+      "sources":                self.parseSources,
+      "module":                 self.parseModule,
+      "framework_search_paths": self.parseFrameworkSearchPaths,
+      "target_type":            self.parseTargetType,
+      "dependencies":           self.parseDependencies,
     ]
     
     for (keyYaml, valueYaml) in yaml.dictionary! {
