@@ -9,6 +9,7 @@ var Flags = FlagsStorage()
 
 class Runner {
   var options = [String]()
+  var roostfile: Roostfile!
 
   func run() {
     let argumentsCount = Process.arguments.count
@@ -16,6 +17,8 @@ class Runner {
     if argumentsCount < 2 {
       printAndExit("Usage: roost [command] [options]")
     }
+
+    roostfile = parseRoostfile()
 
     let command = Process.arguments[1]
     options = Array(Process.arguments[2..<argumentsCount])
@@ -30,8 +33,6 @@ class Runner {
   private func build() {
     parseOptionsForBuild()
 
-    let roostfile = parseRoostfile()
-    
     // roostfile.inspect()
 
     let package = roostfile.asPackage()
@@ -41,8 +42,7 @@ class Runner {
   }
 
   private func update() {
-    let roostfile = parseRoostfile()
-    let package   = roostfile.asPackage()
+    let package = roostfile.asPackage()
 
     let vendorDirectory = package.vendorDirectory
 
