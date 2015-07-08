@@ -20,6 +20,11 @@ bin/roost update
 bin/roost build -B
 ```
 
+## Commands
+
+* **`update`**: Clone or pull the dependencies.
+* **`build`**: Build the dependencies (if any) and the project. Pass the `-B` flag to force a rebuild of everything.
+
 ## Under the hood
 
 Roost looks for a `Roostfile.yaml` in the current directory. It parses that file and then executes the given command.
