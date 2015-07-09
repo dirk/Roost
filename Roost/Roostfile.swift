@@ -170,16 +170,23 @@ class Roostfile {
   }
 
   func inspect() {
-    println("name \(name)")
-    println("sources \(sources)")
+    println("name: \(name)")
+    println("sources: \(sources)")
 
-    for (name, module) in modules {
-      println("module {")
-
-      module.inspect()
-
-      println("}")
+    for dependency in dependencies {
+      println("dependency:")
+      
+      if let github = dependency.github {
+        println("  github: \(github)")
+      } else {
+        println("  unknown")
+      }
     }
+
+    // for (name, module) in modules {
+    //   println("module  :")
+    //   module.inspect()
+    // }
   }
 
 }// class Roostfile

@@ -26,21 +26,17 @@ class Runner {
     options = Array(Process.arguments[2..<argumentsCount])
 
     switch command {
-      case "build":  build()
-      case "update": update()
-      default:       printAndExit("Invalid command: '\(command)'")
+      case "build":   build()
+      case "inspect": inspect()
+      case "update":  update()
+      default:        printAndExit("Invalid command: '\(command)'")
     }
   }
 
   private func build() {
     parseOptionsForBuild()
 
-    // roostfile.inspect()
-
-    let package = roostfile.asPackage()
-    let builder = Builder(package)
-
-    builder.compile()
+    Builder(roostfile.asPackage()).compile()
   }
 
   private func update() {
@@ -53,6 +49,10 @@ class Runner {
 
       dependency.update(directory)
     }
+  }
+
+  private func inspect() {
+    roostfile.inspect()
   }
 
 
