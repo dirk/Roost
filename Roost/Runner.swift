@@ -10,17 +10,19 @@ var Flags = FlagsStorage()
 class Runner {
   var options = [String]()
   var roostfile: Roostfile!
+  var command: String!
 
   func run() {
     let argumentsCount = Process.arguments.count
 
     if argumentsCount < 2 {
-      printAndExit("Usage: roost [command] [options]")
+      printUsageAndCommands()
+      exit(1)
     }
 
     roostfile = parseRoostfile()
 
-    let command = Process.arguments[1]
+    command = Process.arguments[1]
     options = Array(Process.arguments[2..<argumentsCount])
 
     switch command {
@@ -56,18 +58,28 @@ class Runner {
 
 // Option parsing
 
+  private func optionParsingError(cli: CommandLine, _ error: String) {
+    println(error)
+    println("")
+    cli.printUsage()
+    println("")
+    exit(1)
+  }
+
   /**
     Utility for parsing the command-line options
   */
   private func parseWithOptions(commandOptions: Option...) {
-    let cli = CommandLine(arguments: options)
+    let optionsWithCommand = ["roost \(command)"] + options
+
+    let cli = CommandLine(arguments: optionsWithCommand)
 
     cli.addOptions(commandOptions)
 
-    let (success, error) = cli.parse()
+    let (success, error) = cli.parse(strict: true)
 
     if !success {
-      printAndExit(error!)
+      optionParsingError(cli, error!)
     }
   }
 
@@ -107,6 +119,14 @@ class Runner {
     roostfile.parseFromString(contents as String)
 
     return roostfile
+  }
+
+  private func printUsageAndCommands() {
+    println("Usage: roost [command] [options]\n")
+    println("Available commands:\n")
+    println("  build   Build project")
+    println("  update  Update (or fetch if not present) project dependencies")
+    println("")
   }
 
   // private func initializeFlags() {
