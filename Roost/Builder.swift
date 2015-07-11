@@ -101,6 +101,7 @@ class Builder {
     // TODO: Have it return a Bool indicating whether dependencies were
     //       changed to let us know if we need to recompile
     ensureHaveDependencies()
+    ensureDirectoryExists(buildDirectory)
 
     checkPreconditions()
 
@@ -154,6 +155,8 @@ class Builder {
 
     switch package.targetType {
       case .Executable:
+        ensureDirectoryExists("bin")
+
         // First check for modification-times of the output executable
         let binFilePath = "bin/\(roostfile.name.lowercaseString)"
         let binFileModificationDate = getFileModificationDate(binFilePath)
@@ -313,5 +316,25 @@ class Builder {
     let data = pipe.fileHandleForReading.readDataToEndOfFile()
     return NSString(data: data, encoding: NSUTF8StringEncoding)!
   }
+
+  private func ensureDirectoryExists(path: String) {
+    var isDirectory: ObjCBool = false
+
+    if fileManager.fileExistsAtPath(path, isDirectory: &isDirectory) {
+      if !isDirectory {
+        printAndExit("Must be a directory: \(path)")
+      }
+      return
+    }
+
+    let created = fileManager.createDirectoryAtPath(path,
+                                                    withIntermediateDirectories: true,
+                                                    attributes: nil,
+                                                    error: nil)
+
+    if !created {
+      printAndExit("Failed to create vendor directory: \(vendorDirectory)")
+    }
+  }// ensureDirectoryExists
 
 }
