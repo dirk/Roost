@@ -15,7 +15,8 @@ enum CompilationResult {
 class Builder {
 
   var package: Package
-  var buildDirectory: String!
+  var buildDirectory: String
+  var binDirectory: String
 
   var fileManager: NSFileManager     { get { return NSFileManager.defaultManager() } }
 
@@ -26,6 +27,7 @@ class Builder {
   init(_ aPackage: Package) {
     package = aPackage
     buildDirectory = "\(package.directory)/build"
+    binDirectory = "\(package.directory)/bin"
   }
 
   private func commonCompilerArguments() -> [String] {
@@ -155,10 +157,10 @@ class Builder {
 
     switch package.targetType {
       case .Executable:
-        ensureDirectoryExists("bin")
+        ensureDirectoryExists(binDirectory)
 
         // First check for modification-times of the output executable
-        let binFilePath = "bin/\(roostfile.name.lowercaseString)"
+        let binFilePath = "\(binDirectory)/\(roostfile.name.lowercaseString)"
         let binFileModificationDate = getFileModificationDate(binFilePath)
 
         if let date = binFileModificationDate {
