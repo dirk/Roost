@@ -243,6 +243,8 @@ class Builder {
     var arguments = baseArguments
 
     arguments.extend(["-emit-module-path", path])
+    arguments.extend(["-module-name", module.name])
+
     announceAndRunTask("Compiling \(path)... ",
                        arguments: ["-c", " ".join(arguments)],
                        finished: "Compiled Swift for module \(module.name) to \(path)")
@@ -253,9 +255,10 @@ class Builder {
     let libraryFilePath = libraryFilePathForModule(module)
     var libraryArguments = baseArguments
 
-    libraryArguments.extend(["-parse-as-library", "-emit-object"])
+    libraryArguments.extend(["-parse-as-library", "-emit-object", "-whole-module-optimization"])
     libraryArguments.extend(["-module-name", module.name])
     libraryArguments.extend(["-o", temporaryObjectPath])
+
     announceAndRunTask("Compiling \(temporaryObjectPath)... ",
                        arguments: ["-c", " ".join(libraryArguments)],
                        finished: "Compiled object for module \(module.name) to \(temporaryObjectPath)")
