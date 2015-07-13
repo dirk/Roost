@@ -11,7 +11,7 @@ Roost is self-hosting, but also comes with a Makefile for bootstrapping.
 ```bash
 git clone https://github.com/dirk/Roost.git
 # Fetch the dependencies
-cd vendor; carthage bootstrap; cd ..
+cd Roost/vendor; carthage bootstrap; cd ..
 # Build the binary using Make to invoke swiftc
 make
 # Use Roost to pull its dependencies
