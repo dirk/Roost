@@ -42,30 +42,42 @@ class Roostfile {
   var targetType: TargetType = .Unknown
 
   func parseFromString(string: String) {
-    let yaml = Yaml.load(string).value!
+    let yaml = Yaml.load(string)
+
+    if let error = yaml.error {
+      printAndExit(error)
+    }
 
     // Map names to processors
     let map = [
       "name":                   self.parseName,
+      "version":                self.parseVersion,
       "sources":                self.parseSources,
-      "module":                 self.parseModule,
+      "modules":                self.parseModules,
       "framework_search_paths": self.parseFrameworkSearchPaths,
       "target_type":            self.parseTargetType,
       "dependencies":           self.parseDependencies,
     ]
-    
-    for (keyYaml, valueYaml) in yaml.dictionary! {
-      if let key = keyYaml.string {
-        if let action = map[key] {
-          action(valueYaml)
-          continue
+
+    if let dictionary = yaml.value!.dictionary {
+      for (keyYaml, valueYaml) in dictionary {
+        if let key = keyYaml.string {
+          if let action = map[key] {
+            action(valueYaml)
+            continue
+          } else {
+            printAndExit("Can't parse key '\(key)''")
+          }
+
         } else {
-          println("Can't parse key '\(key)''")
+          printAndExit("Can't parse key")
         }
-      } else {
-        println("Can't parse key")
-      }
+      }// for
+
+    } else {
+      printAndExit("Can't parse document; expected dictionary")
     }
+
   }// parseFromString
 
   func asPackage() -> Package {
@@ -76,6 +88,13 @@ class Roostfile {
     name = yaml.string!
   }
 
+  /**
+    Skip no-op.
+  */
+  func parseVersion(yaml: Yaml) {
+    return
+  }
+
   func parseSources(yaml: Yaml) {
     if let sourcesYamls = yaml.array {
       sources = sourcesYamls.map { (s) in
@@ -83,6 +102,12 @@ class Roostfile {
       }
     } else {
       println("Cannot parse sources")
+    }
+  }
+
+  func parseModules(yaml: Yaml) {
+    for moduleYaml in yaml.array! {
+      parseModule(moduleYaml)
     }
   }
 
@@ -175,7 +200,7 @@ class Roostfile {
 
     for dependency in dependencies {
       println("dependency:")
-      
+
       if let github = dependency.github {
         println("  github: \(github)")
       } else {
