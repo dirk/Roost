@@ -3,6 +3,7 @@ import CommandLine
 
 struct FlagsStorage {
   var MustRecompile: Bool = false
+  var Verbose: Bool = false
 }
 
 var Flags = FlagsStorage()
@@ -91,9 +92,14 @@ class Runner {
                                    longFlag: "rebuild",
                                    helpMessage: "Rebuild package")
 
-    parseWithOptions(mustRecompile)
+    let verbose = BoolOption(shortFlag: "v",
+                             longFlag: "verbose",
+                             helpMessage: "Verbose logging")
+
+    parseWithOptions(mustRecompile, verbose)
 
     Flags.MustRecompile = mustRecompile.value
+    Flags.Verbose       = verbose.value
   }
 
 

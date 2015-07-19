@@ -35,22 +35,39 @@ public func getFileModificationDate(path: String) -> NSDate? {
 }
 
 func announceAndRunTask(announcement: String, #arguments: [String], #finished: String) {
-  print(announcement)
-  stdoutFlush()
+  func normalAnnouncer(block: () -> (Task)) {
+    print(announcement)
+    stdoutFlush()
 
-  let task = Task("/bin/sh")
-  task.arguments = arguments
+    let task = block()
 
-  task.launchAndWait()
+    if !task.hasAnyOutput() {
+      print("\u{001B}[2K") // Clear the whole line
+      print("\r") // Reset cursor to the beginning of line
+      println(finished)
+    }
+  }
+  func verboseAnnouncer(block: () -> (Task)) {
+    println(announcement)
+    println(" ".join(arguments))
 
-  print("\u{001B}[2K") // Clear the whole line
-  print("\r") // Reset cursor to the beginning of line
+    block()
+  }
 
-  if task.hasAnyOutput() {
-    println(task.outputString)
-    println(task.errorString)
-  } else {
-    println(finished)
+  let announcer = Flags.Verbose ? verboseAnnouncer : normalAnnouncer
+
+  announcer() {
+    let task = Task("/bin/sh")
+    task.arguments = arguments
+
+    task.launchAndWait()
+
+    if task.hasAnyOutput() {
+      println(task.outputString)
+      println(task.errorString)
+    }
+
+    return task
   }
 }
 

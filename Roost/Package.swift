@@ -71,8 +71,7 @@ class Package {
 
     for sourceDirectory in directories {
       if !(sourceDirectory as NSString).hasSuffix("/") {
-        println("Cannot handle directory like '\(sourceDirectory)'")
-        continue
+        printAndExit("Cannot handle directory like '\(sourceDirectory)'")
       }
 
       let baseDirectory = roostfile.directory as NSString
