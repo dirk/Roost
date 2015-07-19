@@ -55,6 +55,7 @@ func announceAndRunTask(announcement: String, #arguments: [String], #finished: S
   }
 
   let announcer = Flags.Verbose ? verboseAnnouncer : normalAnnouncer
+  let environment = NSProcessInfo.processInfo().environment
 
   announcer() {
     let task = Task("/bin/sh")
@@ -63,8 +64,14 @@ func announceAndRunTask(announcement: String, #arguments: [String], #finished: S
     task.launchAndWait()
 
     if task.hasAnyOutput() {
-      println(task.outputString)
-      println(task.errorString)
+      println()
+
+      if let output = task.outputData {
+        NSFileHandle.fileHandleWithStandardOutput().writeData(output)
+      }
+      if let error = task.errorData {
+        NSFileHandle.fileHandleWithStandardError().writeData(error)
+      }
     }
 
     return task
