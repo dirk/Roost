@@ -58,7 +58,7 @@ func announceAndRunTask(announcement: String, #arguments: [String], #finished: S
   let environment = NSProcessInfo.processInfo().environment
 
   announcer() {
-    let task = Task("/bin/sh")
+    let task = Task("/usr/bin/env")
     task.arguments = arguments
 
     task.launchAndWait()

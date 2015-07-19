@@ -123,17 +123,17 @@ class Builder {
     // Add any framework search paths
     for path in frameworkSearchPaths {
       // Compiler framework support
-      arguments.append("-F \(path)")
+      arguments.extend(["-F", path])
 
       // Linker framework support
-      arguments.append("-Xlinker -rpath -Xlinker @executable_path/../\(path)")
+      arguments.extend(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../\(path)"])
     }
 
     // If we have built modules to include and link against
     if roostfile.modules.count > 0 {
       // Set search path for the modules
-      arguments.append("-I build")
-      arguments.append("-L build")
+      arguments.extend(["-I", "build"])
+      arguments.extend(["-L", "build"])
 
       // Link the modules
       for (_, module) in roostfile.modules {
@@ -148,7 +148,7 @@ class Builder {
         let name = dep.moduleName
 
         let buildPath = "\(directory)/build"
-        arguments.append("-I \(buildPath) -L \(buildPath)")
+        arguments.extend(["-I", buildPath, "-L", buildPath])
 
         // Link the dependency's module
         arguments.append("-l\(name)")
@@ -177,7 +177,7 @@ class Builder {
         arguments.append(binFilePath)
 
         announceAndRunTask("Compiling \(binFilePath)... ",
-                           arguments: ["-c", " ".join(arguments)],
+                           arguments: arguments,
                            finished: "Compiled \(roostfile.name) to \(binFilePath)")
 
       case .Module:
@@ -205,10 +205,10 @@ class Builder {
 
     let modulePath = modulePathForPackage()
 
-    arguments.append("-emit-module-path \(modulePath)")
+    arguments.extend(["-emit-module-path", modulePath])
 
     announceAndRunTask("Compiling \(modulePath)",
-                       arguments: ["-c", " ".join(arguments)],
+                       arguments: arguments,
                        finished: "Created \(roostfile.name) module at \(modulePath)")
   }
 
@@ -217,18 +217,18 @@ class Builder {
 
     let objectFilePath  = "\(buildDirectory)/tmp-\(roostfile.name).o"
     let libraryFilePath = "\(buildDirectory)/lib\(roostfile.name).a"
-    arguments.append("-parse-as-library -emit-object")
-    arguments.append("-module-name \(roostfile.name)")
-    arguments.append("-o \(objectFilePath)")
+    arguments.extend(["-parse-as-library", "-emit-object"])
+    arguments.extend(["-module-name", roostfile.name])
+    arguments.extend(["-o", objectFilePath])
 
     announceAndRunTask("Compiling \(objectFilePath)... ",
-                       arguments: ["-c", " ".join(arguments)],
+                       arguments: arguments,
                        finished: "Compiled \(roostfile.name) object to \(objectFilePath)")
 
-    let archive = "libtool -o \(libraryFilePath) \(objectFilePath)"
+    let archive = ["libtool", "-o", libraryFilePath, objectFilePath]
 
     announceAndRunTask("Archiving \(libraryFilePath)... ",
-                       arguments: ["-c", archive],
+                       arguments: archive,
                        finished: "Created \(roostfile.name) archive at \(libraryFilePath)")
   }
 
@@ -251,7 +251,7 @@ class Builder {
     arguments.extend(["-module-name", module.name])
 
     announceAndRunTask("Compiling \(path)... ",
-                       arguments: ["-c", " ".join(arguments)],
+                       arguments: arguments,
                        finished: "Compiled Swift for module \(module.name) to \(path)")
   }
 
@@ -265,10 +265,10 @@ class Builder {
     libraryArguments.extend(["-o", temporaryObjectPath])
 
     announceAndRunTask("Compiling \(temporaryObjectPath)... ",
-                       arguments: ["-c", " ".join(libraryArguments)],
+                       arguments: libraryArguments,
                        finished: "Compiled object for module \(module.name) to \(temporaryObjectPath)")
     announceAndRunTask("Archiving \(libraryFilePath)... ",
-                       arguments: ["-c", "libtool -o \(libraryFilePath) \(temporaryObjectPath)"],
+                       arguments: ["libtool", "-o", libraryFilePath, temporaryObjectPath],
                        finished: "Archived library for module \(module.name) to \(libraryFilePath)")
 
     // Remove the old temporary file
