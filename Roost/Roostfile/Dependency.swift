@@ -62,10 +62,10 @@ extension Roostfile {
     }
 
     func clone(directory: String) {
-      let cloneCommand = "git clone -q \(sourceURL()) \(directory)"
+      let cloneCommand = ["git", "clone", "-q", sourceURL(), directory]
 
       announceAndRunTask("Cloning dependency \(shortName)... ",
-                         arguments: ["-c", cloneCommand],
+                         arguments: cloneCommand,
                          finished: "Cloned dependency \(shortName)")
     }
 
@@ -77,7 +77,7 @@ extension Roostfile {
       let commands = " && ".join(commandsArray)
 
       announceAndRunTask("Pulling dependency \(shortName)... ",
-                         arguments: ["-c", commands],
+                         arguments: ["sh", "-c", commands],
                          finished: "Pulled dependency \(shortName)")
     }// pullDependency
 

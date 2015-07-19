@@ -41,6 +41,8 @@ class Runner {
   }
 
   private func update() {
+    parseOptionsForUpdate()
+
     let package = roostfile.asPackage()
 
     let vendorDirectory = package.vendorDirectory
@@ -84,6 +86,13 @@ class Runner {
     }
   }
 
+  private func createVerboseOption() -> BoolOption {
+    return BoolOption(shortFlag: "v",
+                      longFlag: "verbose",
+                      helpMessage: "Verbose logging")
+
+  }
+
   /**
     Parse the command-line option arguments for the `build` command.
   */
@@ -92,14 +101,20 @@ class Runner {
                                    longFlag: "rebuild",
                                    helpMessage: "Rebuild package")
 
-    let verbose = BoolOption(shortFlag: "v",
-                             longFlag: "verbose",
-                             helpMessage: "Verbose logging")
-
+    let verbose = createVerboseOption()
+    
     parseWithOptions(mustRecompile, verbose)
 
     Flags.MustRecompile = mustRecompile.value
     Flags.Verbose       = verbose.value
+  }
+
+  private func parseOptionsForUpdate() {
+    let verbose = createVerboseOption()
+
+    parseWithOptions(verbose)
+
+    Flags.Verbose = verbose.value
   }
 
 
