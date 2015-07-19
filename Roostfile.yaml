@@ -6,6 +6,10 @@ sources:
   - Roost/
 framework_search_paths:
   - vendor/Carthage/Build/Mac
+modules:
+  - name: MessagePack
+    sources:
+      - vendor/MessagePack/Source/
 target_type: executable
 
 dependencies:
