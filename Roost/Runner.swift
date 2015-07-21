@@ -145,8 +145,9 @@ class Runner {
   private func printUsageAndCommands() {
     println("Usage: roost [command] [options]\n")
     println("Available commands:\n")
-    println("  build   Build project")
-    println("  update  Update (or fetch if not present) project dependencies")
+    println("  build    Build project")
+    println("  inspect  Show project details")
+    println("  update   Update (or fetch if not present) project dependencies")
     println("")
   }
 

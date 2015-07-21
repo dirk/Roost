@@ -197,15 +197,31 @@ class Roostfile {
   func inspect() {
     println("name: \(name)")
     println("sources: \(sources)")
+    println("target_type: \(targetType.description.lowercaseString)")
 
-    for dependency in dependencies {
-      println("dependency:")
+    if dependencies.count > 0 {
+      println("dependencies:")
 
-      if let github = dependency.github {
-        println("  github: \(github)")
-      } else {
-        println("  unknown")
+      for dependency in dependencies {
+        if let github = dependency.github {
+          println("  - github: \(github)")
+        } else {
+          println("  - unknown")
+        }
       }
+    }
+
+    if modules.count > 0 {
+      println("modules:")
+
+      for (key, module) in modules {
+        println("  - name: \(module.name)")
+        println("    sources: \(module.sources)")
+      }
+    }
+
+    if frameworkSearchPaths.count > 0 {
+      println("framework_search_paths: \(frameworkSearchPaths)")
     }
 
     // for (name, module) in modules {
