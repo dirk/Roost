@@ -34,6 +34,9 @@ class Runner {
     }
   }
 
+
+// Commands
+
   private func build() {
     parseOptionsForBuild()
 
@@ -86,13 +89,6 @@ class Runner {
     }
   }
 
-  private func createVerboseOption() -> BoolOption {
-    return BoolOption(shortFlag: "v",
-                      longFlag: "verbose",
-                      helpMessage: "Verbose logging")
-
-  }
-
   /**
     Parse the command-line option arguments for the `build` command.
   */
@@ -119,6 +115,15 @@ class Runner {
 
 
 // Utility functions
+
+  /**
+    Creates a BoolOption for parsing the "-v" verbose flag.
+  */
+  private func createVerboseOption() -> BoolOption {
+    return BoolOption(shortFlag: "v",
+                      longFlag: "verbose",
+                      helpMessage: "Verbose logging")
+  }
 
   private func findRoostfile() -> (String, String) {
     let cwd = currentDirectoryPath()
@@ -151,13 +156,4 @@ class Runner {
     println("")
   }
 
-  // private func initializeFlags() {
-  //   let environment = NSProcessInfo.processInfo().environment
-  //
-  //   let mustRecompile = environment["MUST_RECOMPILE"] as! NSString?
-  //
-  //   if let flag = mustRecompile {
-  //     Flags.MustRecompile = flag.lowercaseString != "no"
-  //   }
-  // }
 }
