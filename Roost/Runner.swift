@@ -29,6 +29,7 @@ class Runner {
     switch command {
       case "build":   build()
       case "inspect": inspect()
+      case "list":    list()
       case "update":  update()
       default:        printAndExit("Invalid command: '\(command)'")
     }
@@ -59,6 +60,23 @@ class Runner {
 
   private func inspect() {
     roostfile.inspect()
+  }
+
+  private func list() {
+    let home = NSHomeDirectory()
+    let directory = "\(home)/.roost"
+
+    if !directoryExists(directory) {
+      if !createDirectoryAtPath(directory) {
+        printAndExit("Unable to create data directory: \(directory)")
+      }
+    }
+
+    let path = "\(directory)/Index.bin"
+
+    if !fileExists(path) {
+      printAndExit("Missing index file: \(path)")
+    }
   }
 
 
@@ -152,6 +170,7 @@ class Runner {
     println("Available commands:\n")
     println("  build    Build project")
     println("  inspect  Show project details")
+    println("  list     List all packages in the index")
     println("  update   Update (or fetch if not present) project dependencies")
     println("")
   }
