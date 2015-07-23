@@ -5,6 +5,54 @@ public func currentDirectoryPath() -> String {
   return (NSFileManager().currentDirectoryPath)
 }
 
+private enum FileStatus {
+  case Missing
+  case File
+  case Directory
+}
+
+private func getFileStatus(path: String) -> FileStatus {
+  let fileManager = NSFileManager.defaultManager()
+  var isDirectory: ObjCBool = false
+
+  if fileManager.fileExistsAtPath(path, isDirectory: &isDirectory) {
+    if isDirectory {
+      return .Directory
+    }
+    return .File
+  }
+  return .Missing
+}
+
+public func directoryExists(path: String) -> Bool {
+  switch getFileStatus(path) {
+    case .Directory:
+      return true
+    default:
+      return false
+  }
+}
+
+public func fileExists(path: String) -> Bool {
+  switch getFileStatus(path) {
+    case .File:
+      return true
+    default:
+      return false
+  }
+}
+
+public func createDirectoryAtPath(path: String) -> Bool {
+  let fileManager = NSFileManager.defaultManager()
+
+  let created = fileManager.createDirectoryAtPath(path,
+                                                  withIntermediateDirectories: true,
+                                                  attributes: nil,
+                                                  error: nil)
+
+  return created
+}
+
 public func readFile(path: String) -> String {
   let url = NSURL(fileURLWithPath: path)!
   var error: NSError?

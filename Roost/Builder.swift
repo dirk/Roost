@@ -322,11 +322,8 @@ class Builder {
   private func ensureDirectoryExists(path: String) {
     var isDirectory: ObjCBool = false
 
-    if fileManager.fileExistsAtPath(path, isDirectory: &isDirectory) {
-      if !isDirectory {
-        printAndExit("Must be a directory: \(path)")
-      }
-      return
+    if !directoryExists(path) {
+      printAndExit("Must be a directory: \(path)")
     }
 
     let created = fileManager.createDirectoryAtPath(path,
