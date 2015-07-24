@@ -63,20 +63,9 @@ class Runner {
   }
 
   private func list() {
-    let home = NSHomeDirectory()
-    let directory = "\(home)/.roost"
+    let path = Index.findIndexFile()
 
-    if !directoryExists(directory) {
-      if !createDirectoryAtPath(directory) {
-        printAndExit("Unable to create data directory: \(directory)")
-      }
-    }
-
-    let path = "\(directory)/Index.bin"
-
-    if !fileExists(path) {
-      printAndExit("Missing index file: \(path)")
-    }
+    Index.read(path)
   }
 
 
