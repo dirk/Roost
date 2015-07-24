@@ -105,7 +105,7 @@ class Runner {
                                    helpMessage: "Rebuild package")
 
     let verbose = createVerboseOption()
-    
+
     parseWithOptions(mustRecompile, verbose)
 
     Flags.MustRecompile = mustRecompile.value
