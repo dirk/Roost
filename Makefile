@@ -23,7 +23,7 @@ build/tmp-Tasker.o: Tasker/*.swift
 
 
 build/MessagePack.swiftmodule: vendor/MessagePack/Source/*.swift
-	$(SWIFTC) -emit-module-path $@ $^
+	$(SWIFTC) -module-name MessagePack -emit-module-path $@ $^
 
 build/libMessagePack.a: build/tmp-MessagePack.o
 	libtool -o $@ $^
