@@ -1,4 +1,5 @@
 import Foundation
+import MessagePack
 
 private let LINE_FEED: UInt8 = 10
 
@@ -14,6 +15,25 @@ class Index {
     } else {
       printAndExit("Unable to compiled regular expression: \(error)")
       return nil
+    }
+  }
+
+  struct Package {
+    let name: String
+    var version: AnyObject
+  }
+
+  var packages = Dictionary<String, Package>()
+
+  init(dictionary: [MessagePackValue : MessagePackValue]) {
+    for (nameValue, packageValue) in dictionary {
+      let name    = nameValue.stringValue!
+      let package = packageValue.dictionaryValue!
+
+      let version = package["version"]!.stringValue!
+
+      packages[name] = Package(name: name,
+                               version: version)
     }
   }
 
@@ -46,7 +66,17 @@ class Index {
       return printAndExit("Unable to read Index header data")
     }
 
-    println("Loading Index version \(version)... ")
+    print("Loading Index version \(version)... ")
+
+    if let value = MessagePack.unpack(payloadData) {
+      if let dictionary = value.dictionaryValue {
+        let index = Index(dictionary: dictionary)
+
+        println("Done")
+        return
+      }
+    }
+    println("Error reading MessagePack data")
   }
 
   class func readHeaderAndPayload(path: String) -> (NSData, NSData) {
