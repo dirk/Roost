@@ -322,17 +322,13 @@ class Builder {
   private func ensureDirectoryExists(path: String) {
     var isDirectory: ObjCBool = false
 
-    if !directoryExists(path) {
-      printAndExit("Must be a directory: \(path)")
-    }
-
     let created = fileManager.createDirectoryAtPath(path,
                                                     withIntermediateDirectories: true,
                                                     attributes: nil,
                                                     error: nil)
 
     if !created {
-      printAndExit("Failed to create vendor directory: \(vendorDirectory)")
+      printAndExit("Failed to create directory: \(path)")
     }
   }// ensureDirectoryExists
 
