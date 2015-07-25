@@ -18,9 +18,15 @@ class Index {
     }
   }
 
+  struct Version {
+    let version: String
+    let description: String
+  }
+
   struct Package {
     let name: String
-    var version: AnyObject
+    let version: String
+    let versions: Array<Version>
   }
 
   var packages = Dictionary<String, Package>()
@@ -31,9 +37,18 @@ class Index {
       let package = packageValue.dictionaryValue!
 
       let version = package["version"]!.stringValue!
+      let versions = package["versions"]!.arrayValue!.map {
+        (v: MessagePackValue) -> Version in
+
+        let version     = v["version"]!.stringValue!
+        let description = v["description"]!.stringValue!
+
+        return Version(version: version, description: description)
+      }
 
       packages[name] = Package(name: name,
-                               version: version)
+                               version: version,
+                               versions: versions)
     }
   }
 
