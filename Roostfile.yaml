@@ -14,3 +14,7 @@ target_type: executable
 
 dependencies:
   - github: dirk/Tasker
+
+test_target:
+  sources:
+    - RoostTests/

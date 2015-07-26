@@ -31,6 +31,7 @@ class Runner {
       case "inspect": inspect()
       case "list":    list()
       case "update":  update()
+      case "test":    test()
       default:        printAndExit("Invalid command: '\(command)'")
     }
   }
@@ -66,6 +67,14 @@ class Runner {
     let path = Index.findIndexFile()
 
     Index.read(path)
+  }
+
+  private func test() {
+    if roostfile.testTarget == nil {
+      printAndExit("Missing test target")
+    }
+
+    build()
   }
 
 

@@ -35,11 +35,12 @@ enum TargetType: Printable {
 class Roostfile {
   var name: String!
   var directory: String!
-  var sources                = [String]()
-  var frameworkSearchPaths   = [String]()
-  var modules                = Dictionary<String, Roostfile.Module>()
-  var dependencies           = Array<Roostfile.Dependency>()
-  var targetType: TargetType = .Unknown
+  var sources                 = [String]()
+  var frameworkSearchPaths    = [String]()
+  var modules                 = Dictionary<String, Roostfile.Module>()
+  var dependencies            = Array<Roostfile.Dependency>()
+  var targetType: TargetType  = .Unknown
+  var testTarget: TestTarget?
 
   func parseFromString(string: String) {
     let yaml = Yaml.load(string)
@@ -57,6 +58,7 @@ class Roostfile {
       "framework_search_paths": self.parseFrameworkSearchPaths,
       "target_type":            self.parseTargetType,
       "dependencies":           self.parseDependencies,
+      "test_target":            self.parseTestTarget,
     ]
 
     if let dictionary = yaml.value!.dictionary {
@@ -66,7 +68,7 @@ class Roostfile {
             action(valueYaml)
             continue
           } else {
-            printAndExit("Can't parse key '\(key)''")
+            printAndExit("Can't parse key '\(key)'")
           }
 
         } else {
@@ -186,6 +188,20 @@ class Roostfile {
 
   func parseGithubDependency(github: String) {
     dependencies.append(Dependency(github: github))
+  }
+
+  func parseTestTarget(yaml: Yaml) {
+    var testTarget = TestTarget()
+
+    if let hasSources = yaml["sources"].array {
+      testTarget.sources = hasSources.map { (s) in
+        return s.string!
+      }
+    } else {
+      printAndExit("Missing `sources` array in test target")
+    }
+
+    self.testTarget = testTarget
   }
 
 
