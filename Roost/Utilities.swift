@@ -66,8 +66,15 @@ public func readFile(path: String) -> String {
   return contents! as String
 }
 
+private let stderr = NSFileHandle.fileHandleWithStandardError()
+
+/**
+  Print the string to standard error and exit immediately.
+*/
 public func printAndExit(string: String, status: Int32 = 1) {
-  println(string)
+  let data = string.dataUsingEncoding(NSUTF8StringEncoding)
+
+  stderr.writeData(data!)
   exit(status)
 }
 
