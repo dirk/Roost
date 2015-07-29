@@ -3,13 +3,17 @@ import Foundation
 class Package {
   var roostfile: Roostfile
     
-  var directory: String
   var sourceFiles: [String] = []
   var lastModificationDate: NSDate = NSDate()
   var modules: [Package.Module] = []
 
+  var binFileName: String!
+
   var targetType: TargetType {
     get { return roostfile.targetType }
+  }
+  var directory: String {
+    get { return roostfile.directory }
   }
   var vendorDirectory: String {
     get { return "\(directory)/vendor" }
@@ -17,7 +21,6 @@ class Package {
 
   init(_ r: Roostfile) {
     roostfile = r
-    directory = roostfile.directory
 
     let (directories, files, nonMatching) = filterSources(roostfile.sources)
 
@@ -29,10 +32,15 @@ class Package {
     sourceFiles          = scanSourcesDirectories(directories) + files
     lastModificationDate = computeLastModificationDate(sourceFiles)
 
-    // Initial all of our modules from the Roostfile's modules
+    // Initialize all of our modules from the Roostfile's modules
     for (_, module) in roostfile.modules {
       modules.append(Package.Module(module, parent: self))
     }
+
+    if targetType == .Executable {
+      binFileName = roostfile.name.lowercaseString
+    }
+  }
   }
 
   /**

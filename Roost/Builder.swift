@@ -160,7 +160,7 @@ class Builder {
         ensureDirectoryExists(binDirectory)
 
         // First check for modification-times of the output executable
-        let binFilePath = "\(binDirectory)/\(roostfile.name.lowercaseString)"
+        let binFilePath = "\(binDirectory)/\(package.binFileName)"
         let binFileModificationDate = getFileModificationDate(binFilePath)
 
         if let date = binFileModificationDate {
