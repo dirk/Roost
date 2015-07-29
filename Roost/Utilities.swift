@@ -111,7 +111,6 @@ func announceAndRunTask(announcement: String, #arguments: [String], #finished: S
   }
 
   let announcer = Flags.Verbose ? verboseAnnouncer : normalAnnouncer
-  let environment = NSProcessInfo.processInfo().environment
 
   announcer() {
     let task = Task("/usr/bin/env")
@@ -161,6 +160,19 @@ public func getSDKPath() -> String {
   // Memoize and return
   SDKPath = path
   return path
+}
+
+public func getSDKPlatformPath() -> String {
+  let task = Task("/bin/sh")
+  task.arguments = ["-c", "xcrun --sdk macosx --show-sdk-platform-path"]
+
+  task.launchAndWait()
+
+  if !task.hasAnyOutput() {
+    printAndExit("Failed to look up SDK platform path")
+  }
+
+  return task.outputString
 }
 
 extension NSDate {

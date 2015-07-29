@@ -8,6 +8,7 @@ class Package {
   var modules: [Package.Module] = []
 
   var binFileName: String!
+  var includeSDKPlatformInRpath: Bool = false
 
   var targetType: TargetType {
     get { return roostfile.targetType }
@@ -45,7 +46,10 @@ class Package {
 
     sourceFiles          = primaryFiles + testFiles
     lastModificationDate = NSDate()
-    binFileName          = "test-\(roostfile.name.lowercaseString)"
+
+    // Testing-specific configuration for Builder
+    binFileName               = "test-\(roostfile.name.lowercaseString)"
+    includeSDKPlatformInRpath = true
   }
 
   /**

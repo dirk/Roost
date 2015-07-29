@@ -120,14 +120,27 @@ class Builder {
     // Compile all of the sources
     arguments.extend(package.sourceFiles)
 
+
+    var rpaths = [String]()
+
     // Add any framework search paths
     for path in frameworkSearchPaths {
       // Compiler framework support
       arguments.extend(["-F", path])
 
-      // Linker framework support
-      arguments.extend(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../\(path)"])
+      rpaths.append("@executable_path/../\(path)")
     }
+
+    if package.includeSDKPlatformInRpath {
+      let platformPath = getSDKPlatformPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
+      rpaths.append("\(platformPath)/Developer/Library/Frameworks")
+    }
+
+    for path in rpaths {
+      // Linker framework support
+      arguments.extend(["-Xlinker", "-rpath", "-Xlinker", path])
+    }
+
 
     // If we have built modules to include and link against
     if roostfile.modules.count > 0 {
