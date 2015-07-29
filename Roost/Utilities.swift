@@ -75,6 +75,7 @@ public func printAndExit(string: String, status: Int32 = 1) {
   let data = string.dataUsingEncoding(NSUTF8StringEncoding)
 
   stderr.writeData(data!)
+  stderr.writeData("\n".dataUsingEncoding(NSUTF8StringEncoding)!)
   exit(status)
 }
 
