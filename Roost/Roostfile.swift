@@ -86,6 +86,10 @@ class Roostfile {
     return Package(self)
   }
 
+  func asPackageForTest() -> Package {
+    return Package(testSources: testTarget!.sources, forRoostfile: self)
+  }
+
   func parseName(yaml: Yaml) {
     name = yaml.string!
   }

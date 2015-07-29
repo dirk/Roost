@@ -75,6 +75,8 @@ class Runner {
     }
 
     build()
+
+    Builder(roostfile.asPackageForTest()).compile()
   }
 
 

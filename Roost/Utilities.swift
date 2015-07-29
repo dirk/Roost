@@ -168,3 +168,9 @@ extension NSDate {
     return (self.compare(other) == NSComparisonResult.OrderedDescending) ? true : false
   }
 }
+
+extension String {
+  func contains(other: String) -> Bool {
+    return self.rangeOfString(other) != nil
+  }
+}

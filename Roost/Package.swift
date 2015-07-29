@@ -2,7 +2,7 @@ import Foundation
 
 class Package {
   var roostfile: Roostfile
-    
+
   var sourceFiles: [String] = []
   var lastModificationDate: NSDate = NSDate()
   var modules: [Package.Module] = []
@@ -22,14 +22,7 @@ class Package {
   init(_ r: Roostfile) {
     roostfile = r
 
-    let (directories, files, nonMatching) = filterSources(roostfile.sources)
-
-    if nonMatching.count > 0 {
-      let items = ", ".join(nonMatching)
-      printAndExit("Failed to parse as file or directory: \(items)")
-    }
-
-    sourceFiles          = scanSourcesDirectories(directories) + files
+    sourceFiles          = scanSources(roostfile.sources)
     lastModificationDate = computeLastModificationDate(sourceFiles)
 
     // Initialize all of our modules from the Roostfile's modules
@@ -41,6 +34,18 @@ class Package {
       binFileName = roostfile.name.lowercaseString
     }
   }
+
+  init(testSources: [String], forRoostfile r: Roostfile) {
+    roostfile = r
+
+    let primaryFiles = scanSources(roostfile.sources).filter {
+      return !$0.contains("main.swift")
+    }
+    let testFiles    = scanSources(testSources)
+
+    sourceFiles          = primaryFiles + testFiles
+    lastModificationDate = NSDate()
+    binFileName          = "test-\(roostfile.name.lowercaseString)"
   }
 
   /**
@@ -61,17 +66,28 @@ class Package {
 
       if source.hasSuffix("/") {
         directories.append(source as String)
-      
+
       } else if source.hasSuffix(".swift") {
         let expandedPath = "\(directory)/\(source)"
         files.append(expandedPath)
-      
+
       } else {
         nonMatching.append(source as String)
       }
     }
 
     return (directories, files, nonMatching)
+  }
+
+  func scanSources(sources: [String]) -> [String] {
+    let (directories, files, nonMatching) = filterSources(sources)
+
+    if nonMatching.count > 0 {
+      let items = ", ".join(nonMatching)
+      printAndExit("Failed to parse as file or directory: \(items)")
+    }
+
+    return scanSourcesDirectories(directories) + files
   }
 
   func scanSourcesDirectories(directories: [String]) -> [String] {
@@ -93,7 +109,7 @@ class Package {
 
   func computeLastModificationDate(paths: [String]) -> NSDate {
     let manager = NSFileManager.defaultManager()
-    
+
     var dates = [NSDate]()
     var error: NSError?
 
@@ -120,25 +136,30 @@ class Package {
       return !a.isNewerThan(b)
       // return a.compare(b) == NSComparisonResult.OrderedAscending ? true : false
     })
-    
+
     return datesAscending.last!
   }
 
   func scanDirectoryForSources(directory: String) -> [String] {
     let fileManager = NSFileManager()
-    let enumerator = fileManager.enumeratorAtPath(directory)!
 
-    var files = [String]()
+    if let enumerator = fileManager.enumeratorAtPath(directory) {
+      var files = [String]()
 
-    for file in enumerator {
-      if !file.hasSuffix(".swift") { continue }
+      for file in enumerator {
+        if !file.hasSuffix(".swift") { continue }
 
-      let filePath = directory.stringByAppendingPathComponent(file as! String)
+        let filePath = directory.stringByAppendingPathComponent(file as! String)
 
-      files.append(filePath)
+        files.append(filePath)
+      }
+
+      return files
+
+    } else {
+      printAndExit("Failed to enumerate files in directory: \(directory)")
+      return []
     }
-
-    return files
   }// scanSources()
 
 }
