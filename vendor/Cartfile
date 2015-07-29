@@ -1,3 +1,4 @@
 github "SwiftGit2/SwiftGit2" ~> 0.1
 github "behrang/yaml.swift" == 1.0.0
 github "jatoben/CommandLine" == 1.2.0
+github "Quick/Nimble" == 1.0.0
