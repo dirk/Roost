@@ -74,9 +74,11 @@ class Runner {
       printAndExit("Missing test target")
     }
 
-    build()
+    let testPackage = roostfile.asPackageForTest()
 
-    Builder(roostfile.asPackageForTest()).compile()
+    Builder(testPackage).compile()
+
+    TestRunner(testPackage).run()
   }
 
 
