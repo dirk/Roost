@@ -63,6 +63,8 @@ class SpecRunner {
 }
 
 func testSpecs(specs: [Spec]) {
+  setExceptionHandler()
+
   let runner = SpecRunner(specs)
 
   runner.run()
