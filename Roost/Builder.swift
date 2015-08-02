@@ -185,6 +185,17 @@ class Builder {
           }
         }
 
+        // Append compiler options if we have any
+        let options = package.compilerOptions.stringByTrimmingCharactersInSet(WhitespaceCharacterSet)
+
+        if !isEmpty(options) {
+          let optionParts = (options as NSString)
+            .componentsSeparatedByCharactersInSet(WhitespaceCharacterSet)
+            .map { $0 as! String }
+
+          arguments.extend(optionParts)
+        }
+
         // And set the location of the output executable
         arguments.append("-o")
         arguments.append(binFilePath)

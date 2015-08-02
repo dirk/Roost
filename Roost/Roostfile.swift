@@ -41,6 +41,7 @@ class Roostfile {
   var dependencies            = Array<Roostfile.Dependency>()
   var targetType: TargetType  = .Unknown
   var testTarget: TestTarget?
+  var testCompilerOptions: String = ""
 
   func parseFromString(string: String) {
     let yaml = Yaml.load(string)
@@ -203,6 +204,10 @@ class Roostfile {
       }
     } else {
       printAndExit("Missing `sources` array in test target")
+    }
+
+    if let options = yaml["compiler_options"].string {
+      testCompilerOptions = options
     }
 
     self.testTarget = testTarget

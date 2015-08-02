@@ -8,6 +8,7 @@ class Package {
   var modules: [Package.Module] = []
 
   var binFileName: String!
+  var compilerOptions: String = ""
   var includeSDKPlatformInRpath: Bool = false
 
   var targetType: TargetType {
@@ -49,6 +50,7 @@ class Package {
 
     // Testing-specific configuration for Builder
     binFileName               = "test-\(roostfile.name.lowercaseString)"
+    compilerOptions           = roostfile.testCompilerOptions
     includeSDKPlatformInRpath = true
   }
 
