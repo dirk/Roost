@@ -20,11 +20,10 @@ class NimbleAssertionHandlerAdapter: AssertionHandler {
   }
 }
 
+let SpecRunning = 1
+let SpecDone    = 2
 
 class SpecRunner {
-  private let Running = 1
-  private let Done    = 2
-
   let specs: [Spec]
   var lock: NSConditionLock!
 
@@ -34,19 +33,32 @@ class SpecRunner {
 
   func run() {
     for spec in specs {
-      lock = NSConditionLock(condition: Running)
+      lock = NSConditionLock(condition: SpecRunning)
 
       let thread = NSThread(target: self, selector: "runSpec:", object: (spec as! AnyObject))
       thread.start()
 
-      lock.lockWhenCondition(Done)
+      let timeout: NSTimeInterval = 2; // 2 seconds in the future
+      let timeoutDate = NSDate(timeIntervalSinceNow: timeout)
+
+      let didntTimeout = lock.lockWhenCondition(SpecDone, beforeDate: timeoutDate)
+
+      if !didntTimeout {
+        println("Spec timed out")
+      }
+
+      // Unlock it so it can be safely deallocated
+      lock.unlock()
     }
   }
 
   func prepareForSpec(spec: Spec) {
     let handler = NimbleAssertionHandlerAdapter(spec)
 
-    NimbleAssertionHandler = handler
+    // NimbleAssertionHandler = handler
+
+    // Silence assertions on this thread
+    RSilentAssertionHandler.setup()
   }
 
   @objc func runSpec(aSpec: AnyObject?) {
@@ -56,14 +68,19 @@ class SpecRunner {
 
     prepareForSpec(spec)
 
-    spec.spec()
+    let tryBlock = { spec.spec() }
+    let catchBlock = { (exception: NSException!) in
+      println(exception)
+    }
 
-    lock.unlockWithCondition(Done)
+    let didError = RTryCatch(tryBlock, catchBlock)
+
+    lock.unlockWithCondition(SpecDone)
   }
 }
 
 func testSpecs(specs: [Spec]) {
-  setExceptionHandler()
+  RSetupExceptionHandler()
 
   let runner = SpecRunner(specs)
 
