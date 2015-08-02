@@ -36,7 +36,8 @@ build/tmp-MessagePack.o: vendor/MessagePack/Source/*.swift
 	$(SWIFTC) -module-name MessagePack -parse-as-library -emit-object -whole-module-optimization -o $@ $^
 
 build/Exceptions.o: RoostTests/Support/Exceptions.m
-	clang -c $@ -o $^
+	mkdir -p build
+	clang -c $^ -o $@
 
 .PHONY: clean
 
