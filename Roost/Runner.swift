@@ -70,6 +70,8 @@ class Runner {
   }
 
   private func test() {
+    parseOptionsForTest()
+
     if roostfile.testTarget == nil {
       printAndExit("Missing test target")
     }
@@ -123,6 +125,14 @@ class Runner {
 
     Flags.MustRecompile = mustRecompile.value
     Flags.Verbose       = verbose.value
+  }
+
+  private func parseOptionsForTest() {
+    let verbose = createVerboseOption()
+
+    parseWithOptions(verbose)
+
+    Flags.Verbose = verbose.value
   }
 
   private func parseOptionsForUpdate() {
