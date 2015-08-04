@@ -105,7 +105,7 @@ class SpecRunner {
 
       let didError = RTryCatch(tryBlock, catchBlock)
 
-      let marker = (didError ? "✓" : "✗")
+      let marker = (didError ? "✓".colorize(.Green) : "✗".colorize(.Red))
 
       println("\(i)\(marker) \(example.name)")
 
