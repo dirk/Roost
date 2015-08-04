@@ -3,11 +3,13 @@ import Nimble
 class SampleSpec: Spec {
   func spec() {
     describe("something") {
-      expect(1 + 1).to(equal(3))
+      it("should do something") {
+        expect(1 + 1).to(equal(3))
 
-      println("Hello world!")
+        println("Hello world!")
 
-      expect(1 + 1).to(equal(2))
+        expect(1 + 1).to(equal(2))
+      }
     }
   }
 }

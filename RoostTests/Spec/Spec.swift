@@ -1,10 +1,6 @@
 import Foundation
 import Nimble
 
-protocol Spec {
-  func spec()
-}
-
 class NimbleAssertionHandlerAdapter: AssertionHandler {
   let spec: Spec
 
@@ -20,8 +16,15 @@ class NimbleAssertionHandlerAdapter: AssertionHandler {
   }
 }
 
+protocol Spec {
+  func spec()
+}
+
+
 let SpecRunning = 1
 let SpecDone    = 2
+
+private var currentGroup: Group! = nil
 
 class SpecRunner {
   let specs: [Spec]
@@ -59,6 +62,12 @@ class SpecRunner {
 
     // Silence assertions on this thread
     RSilentAssertionHandler.setup()
+
+    let specAsAnyObject: AnyObject = (spec as! AnyObject)
+    let className = NSStringFromClass(specAsAnyObject.dynamicType)
+      .componentsSeparatedByString(".").last!
+
+    currentGroup = Group(className)
   }
 
   @objc func runSpec(aSpec: AnyObject?) {
@@ -77,6 +86,25 @@ class SpecRunner {
 
     lock.unlockWithCondition(SpecDone)
   }
+}
+
+func describe(name: String, definition: () -> ()) {
+  let group = Group(name)
+  group.parent = currentGroup
+  group.parent!.addChild(group)
+
+  currentGroup = group
+
+  definition()
+
+  // Restore parent
+  currentGroup = group.parent!
+}
+
+func it(name: String, block: () -> ()) {
+  let example = Example(name, block)
+
+  currentGroup.addChild(example)
 }
 
 func testSpecs(specs: [Spec]) {
