@@ -1,6 +1,18 @@
 import Foundation
 import Nimble
 
+extension String {
+  func repeat(n: Int) -> String {
+    if n == 0 { return "" }
+
+    var result = self
+
+    for _ in 1 ..< n { result.extend(self) }
+
+    return result
+  }
+}
+
 class NimbleAssertionHandlerAdapter: AssertionHandler {
   let spec: Spec
 
@@ -35,6 +47,8 @@ class SpecRunner {
   }
 
   func run() {
+    println("Running \(specs.count) specs:")
+
     for spec in specs {
       lock = NSConditionLock(condition: SpecRunning)
 
@@ -82,29 +96,42 @@ class SpecRunner {
     // Process the definitions
     spec.spec()
 
-    runGroup(topLevelGroup)
+    runGroup(topLevelGroup, indent: 0)
 
     lock.unlockWithCondition(SpecDone)
   }
 
-  func runGroup(group: Group) {
+  func runGroup(group: Group, indent: Int) {
+    let i = " ".repeat(indent * 2)
+
+    println("\(i)  \(group.name)")
+
     for childExample in group.childExamples {
       let example = childExample.example
+      var exception: NSException! = nil
 
       let tryBlock = {
         example.block()
       }
-      let catchBlock = { (exception: NSException!) in
-        println(exception)
+      let catchBlock = { (caughtException: NSException!) in
+        exception = caughtException
       }
 
       let didError = RTryCatch(tryBlock, catchBlock)
+
+      let marker = (didError ? "✓" : "✗")
+
+      println("\(i)\(marker) \(example.name)")
+
+      if let e = exception {
+        println("\(i)    \(e)")
+      }
     }
 
     for childGroup in group.childGroups {
       let group = childGroup.group
 
-      runGroup(group)
+      runGroup(group, indent: indent + 1)
     }
   }// runGroup
 }
