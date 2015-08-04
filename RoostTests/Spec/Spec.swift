@@ -1,18 +1,6 @@
 import Foundation
 import Nimble
 
-extension String {
-  func repeat(n: Int) -> String {
-    if n == 0 { return "" }
-
-    var result = self
-
-    for _ in 1 ..< n { result.extend(self) }
-
-    return result
-  }
-}
-
 class NimbleAssertionHandlerAdapter: AssertionHandler {
   let spec: Spec
 
@@ -77,9 +65,7 @@ class SpecRunner {
     // Silence assertions on this thread
     RSilentAssertionHandler.setup()
 
-    let specAsAnyObject: AnyObject = (spec as! AnyObject)
-    let className = NSStringFromClass(specAsAnyObject.dynamicType)
-      .componentsSeparatedByString(".").last!
+    let className = getClassNameOfObject(spec as! AnyObject)
 
     currentGroup = Group(className)
   }
