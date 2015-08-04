@@ -77,15 +77,36 @@ class SpecRunner {
 
     prepareForSpec(spec)
 
-    let tryBlock = { spec.spec() }
-    let catchBlock = { (exception: NSException!) in
-      println(exception)
-    }
+    let topLevelGroup = currentGroup
 
-    let didError = RTryCatch(tryBlock, catchBlock)
+    // Process the definitions
+    spec.spec()
+
+    runGroup(topLevelGroup)
 
     lock.unlockWithCondition(SpecDone)
   }
+
+  func runGroup(group: Group) {
+    for childExample in group.childExamples {
+      let example = childExample.example
+
+      let tryBlock = {
+        example.block()
+      }
+      let catchBlock = { (exception: NSException!) in
+        println(exception)
+      }
+
+      let didError = RTryCatch(tryBlock, catchBlock)
+    }
+
+    for childGroup in group.childGroups {
+      let group = childGroup.group
+
+      runGroup(group)
+    }
+  }// runGroup
 }
 
 func describe(name: String, definition: () -> ()) {

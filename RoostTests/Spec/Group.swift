@@ -24,14 +24,24 @@ class Group {
   var childExamples = [ChildExample]()
   var parent: Group? = nil
 
+  var currentIndex: Int = 0
+
   init(_ name: String) {
     self.name = name
   }
 
   func addChild(group: Group) {
-    childGroups.append(ChildGroup(index: 0, group: group))
+    let child = ChildGroup(index: currentIndex, group: group)
+
+    childGroups.append(child)
+
+    currentIndex += 1
   }
   func addChild(example: Example) {
-    childExamples.append(ChildExample(index: 0, example: example))
+    let child = ChildExample(index: currentIndex, example: example)
+
+    childExamples.append(child)
+
+    currentIndex += 1
   }
 }
