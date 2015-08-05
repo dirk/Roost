@@ -10,18 +10,14 @@ class Example {
 
 
 class Group {
-  struct ChildGroup {
-    let index: Int
-    let group: Group
-  }
-  struct ChildExample {
-    let index: Int
-    let example: Example
+
+  enum Child {
+    case ChildGroup(Group)
+    case ChildExample(Example)
   }
 
   let name: String
-  var childGroups = [ChildGroup]()
-  var childExamples = [ChildExample]()
+  var children = [Child]()
   var parent: Group? = nil
 
   var currentIndex: Int = 0
@@ -31,17 +27,9 @@ class Group {
   }
 
   func addChild(group: Group) {
-    let child = ChildGroup(index: currentIndex, group: group)
-
-    childGroups.append(child)
-
-    currentIndex += 1
+    children.append(.ChildGroup(group))
   }
   func addChild(example: Example) {
-    let child = ChildExample(index: currentIndex, example: example)
-
-    childExamples.append(child)
-
-    currentIndex += 1
+    children.append(.ChildExample(example))
   }
 }

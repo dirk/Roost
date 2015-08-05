@@ -92,33 +92,33 @@ class SpecRunner {
 
     println("\(i)  \(group.name)")
 
-    for childExample in group.childExamples {
-      let example = childExample.example
-      var exception: NSException! = nil
+    for child in group.children {
+      switch child {
+      case let .ChildExample(example):
+        var exception: NSException! = nil
 
-      let tryBlock = {
-        example.block()
-      }
-      let catchBlock = { (caughtException: NSException!) in
-        exception = caughtException
-      }
+        let tryBlock = {
+          example.block()
+        }
+        let catchBlock = { (caughtException: NSException!) in
+          exception = caughtException
+        }
 
-      let didError = RTryCatch(tryBlock, catchBlock)
+        let didError = RTryCatch(tryBlock, catchBlock)
 
-      let marker = (didError ? "✓".colorize(.Green) : "✗".colorize(.Red))
+        let marker = (didError ? "✓".colorize(.Green) : "✗".colorize(.Red))
 
-      println("\(i)\(marker) \(example.name)")
+        println("\(i)\(marker) \(example.name)")
 
-      if let e = exception {
-        println("\(i)    \(e)")
-      }
-    }
+        if let e = exception {
+          println("\(i)    \(e)")
+        }
 
-    for childGroup in group.childGroups {
-      let group = childGroup.group
+      case let .ChildGroup(group):
+        runGroup(group, indent: indent + 1)
 
-      runGroup(group, indent: indent + 1)
-    }
+      }// switch child
+    }// for child in children
   }// runGroup
 }
 
