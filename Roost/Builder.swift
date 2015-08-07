@@ -186,14 +186,8 @@ class Builder {
         }
 
         // Append compiler options if we have any
-        let options = package.compilerOptions.stringByTrimmingCharactersInSet(WhitespaceCharacterSet)
-
-        if !isEmpty(options) {
-          let optionParts = (options as NSString)
-            .componentsSeparatedByCharactersInSet(WhitespaceCharacterSet)
-            .map { $0 as! String }
-
-          arguments.extend(optionParts)
+        if let options = hasCompilerOptions(package.compilerOptions) {
+          arguments.extend(options)
         }
 
         // And set the location of the output executable
@@ -355,5 +349,17 @@ class Builder {
       printAndExit("Failed to create directory: \(path)")
     }
   }// ensureDirectoryExists
+
+  private func hasCompilerOptions(rawOptions: String) -> [String]? {
+    let options = rawOptions.stringByTrimmingCharactersInSet(WhitespaceCharacterSet)
+
+    if !isEmpty(options) {
+      return (options as NSString)
+        .componentsSeparatedByCharactersInSet(WhitespaceCharacterSet)
+        .map { $0 as! String }
+    } else {
+      return [String]()
+    }
+  }
 
 }
