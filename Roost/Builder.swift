@@ -1,4 +1,5 @@
 import Foundation
+import Tasker
 
 enum CompilationResult {
   case Skipped
@@ -106,6 +107,7 @@ class Builder {
     ensureDirectoryExists(buildDirectory)
 
     checkPreconditions()
+    runPrecompileCommands()
 
     var modulesCompiled = false
 
@@ -168,6 +170,11 @@ class Builder {
       }
     }
 
+    // Append compiler options if we have any
+    if let options = hasCompilerOptions(package.compilerOptions) {
+      arguments.extend(options)
+    }
+
     switch package.targetType {
       case .Executable:
         ensureDirectoryExists(binDirectory)
@@ -183,11 +190,6 @@ class Builder {
           if !modulesCompiled && targetNewer && !Flags.MustRecompile {
             return .Skipped
           }
-        }
-
-        // Append compiler options if we have any
-        if let options = hasCompilerOptions(package.compilerOptions) {
-          arguments.extend(options)
         }
 
         // And set the location of the output executable
@@ -217,6 +219,26 @@ class Builder {
 
     return .Compiled
   }// compile
+
+  private func runPrecompileCommands() {
+    let commands = package.roostfile.precompileCommands
+
+    for command in commands {
+      let task = Task("/bin/sh")
+      task.arguments = ["-c", command]
+
+      task.launchAndWait()
+
+      if task.hasAnyOutput() {
+        if let output = task.outputData {
+          NSFileHandle.fileHandleWithStandardOutput().writeData(output)
+        }
+        if let error = task.errorData {
+          NSFileHandle.fileHandleWithStandardError().writeData(error)
+        }
+      }
+    }
+  }
 
   private func compileSwiftModule(baseArguments: [String]) {
     var arguments = baseArguments

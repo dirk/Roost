@@ -37,7 +37,8 @@ class Roostfile {
   var directory: String!
   var sources                 = [String]()
   var frameworkSearchPaths    = [String]()
-  var compilerOptions: String = ""
+  var compilerOptions         = ""
+  var precompileCommands      = [String]()
   var modules                 = Dictionary<String, Roostfile.Module>()
   var dependencies            = Array<Roostfile.Dependency>()
   var targetType: TargetType  = .Unknown
@@ -62,6 +63,7 @@ class Roostfile {
       "dependencies":           self.parseDependencies,
       "test_target":            self.parseTestTarget,
       "compiler_options":       self.parseCompilerOptions,
+      "precompile_commands":    self.parsePrecompileCommands,
     ]
 
     if let dictionary = yaml.value!.dictionary {
@@ -157,6 +159,10 @@ class Roostfile {
     frameworkSearchPaths = yaml.array!.map { (y: Yaml) in
       return y.string!
     }
+  }
+
+  func parsePrecompileCommands(yaml: Yaml) {
+    precompileCommands = yaml.array!.map { return $0.string! }
   }
 
   func parseTargetType(yaml: Yaml) {
