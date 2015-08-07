@@ -224,6 +224,7 @@ class Builder {
     let modulePath = modulePathForPackage()
 
     arguments.extend(["-emit-module-path", modulePath])
+    arguments.extend(["-module-name", roostfile.name])
 
     announceAndRunTask("Compiling \(modulePath)",
                        arguments: arguments,
@@ -235,7 +236,7 @@ class Builder {
 
     let objectFilePath  = "\(buildDirectory)/tmp-\(roostfile.name).o"
     let libraryFilePath = "\(buildDirectory)/lib\(roostfile.name).a"
-    arguments.extend(["-parse-as-library", "-emit-object"])
+    arguments.extend(["-parse-as-library", "-emit-object", "-whole-module-optimization"])
     arguments.extend(["-module-name", roostfile.name])
     arguments.extend(["-o", objectFilePath])
 
