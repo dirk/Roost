@@ -37,6 +37,7 @@ class Roostfile {
   var directory: String!
   var sources                 = [String]()
   var frameworkSearchPaths    = [String]()
+  var compilerOptions: String = ""
   var modules                 = Dictionary<String, Roostfile.Module>()
   var dependencies            = Array<Roostfile.Dependency>()
   var targetType: TargetType  = .Unknown
@@ -60,6 +61,7 @@ class Roostfile {
       "target_type":            self.parseTargetType,
       "dependencies":           self.parseDependencies,
       "test_target":            self.parseTestTarget,
+      "compiler_options":       self.parseCompilerOptions,
     ]
 
     if let dictionary = yaml.value!.dictionary {
@@ -211,6 +213,16 @@ class Roostfile {
     }
 
     self.testTarget = testTarget
+  }
+
+  func parseCompilerOptions(yaml: Yaml) {
+    let options = yaml.string
+
+    if options == nil {
+      printAndExit("Invalid (non-string) compiler options")
+    }
+
+    self.compilerOptions = options!
   }
 
 

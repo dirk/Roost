@@ -8,7 +8,7 @@ class Package {
   var modules: [Package.Module] = []
 
   var binFileName: String!
-  var compilerOptions: String = ""
+  var compilerOptions: String
   var includeSDKPlatformInRpath: Bool = false
 
   var targetType: TargetType {
@@ -22,7 +22,8 @@ class Package {
   }
 
   init(_ r: Roostfile) {
-    roostfile = r
+    roostfile       = r
+    compilerOptions = roostfile.compilerOptions
 
     sourceFiles          = scanSources(roostfile.sources)
     lastModificationDate = computeLastModificationDate(sourceFiles)
@@ -38,7 +39,8 @@ class Package {
   }
 
   init(testSources: [String], forRoostfile r: Roostfile) {
-    roostfile = r
+    roostfile       = r
+    compilerOptions = "\(roostfile.compilerOptions) \(roostfile.testCompilerOptions)"
 
     let primaryFiles = scanSources(roostfile.sources).filter {
       return !$0.contains("main.swift")
@@ -50,7 +52,6 @@ class Package {
 
     // Testing-specific configuration for Builder
     binFileName               = "test-\(roostfile.name.lowercaseString)"
-    compilerOptions           = roostfile.testCompilerOptions
     includeSDKPlatformInRpath = true
   }
 
