@@ -4,13 +4,12 @@ SOURCES=$(shell find Roost -name '*.swift')
 
 FRAMEWORKS=-F vendor/Carthage/Build/Mac -Xlinker -rpath -Xlinker @executable_path/../vendor/Carthage/Build/Mac
 
-OPTS_FOR_OBJC=-Xlinker build/Exceptions.o -import-objc-header RoostTests/Support/Exceptions.h
+OPTS_FOR_OBJC=#-Xlinker build/Exceptions.o -import-objc-header RoostTests/Support/Exceptions.h
 OPTS_FOR_MODULES=-I build -L build -lTasker -lMessagePack
 
 bin/roost: $(SOURCES) \
 		build/Tasker.swiftmodule build/libTasker.a \
-		build/MessagePack.swiftmodule build/libMessagePack.a \
-		build/Exceptions.o
+		build/MessagePack.swiftmodule build/libMessagePack.a
 	$(eval sources = $(filter %.swift, $^))
 	@# Build with the sources and the modules
 	$(SWIFTC) $(sources) $(OPTS_FOR_MODULES) $(OPTS_FOR_OBJC) $(FRAMEWORKS) -o $@
@@ -34,10 +33,6 @@ build/libMessagePack.a: build/tmp-MessagePack.o
 
 build/tmp-MessagePack.o: vendor/MessagePack/Source/*.swift
 	$(SWIFTC) -module-name MessagePack -parse-as-library -emit-object -whole-module-optimization -o $@ $^
-
-build/Exceptions.o: RoostTests/Support/Exceptions.m
-	mkdir -p build
-	clang -c $^ -o $@
 
 .PHONY: clean
 

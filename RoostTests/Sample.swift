@@ -1,3 +1,4 @@
+import Speedy
 import Nimble
 
 class SampleSpec: Spec {

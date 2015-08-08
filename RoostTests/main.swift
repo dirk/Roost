@@ -1,3 +1,5 @@
+import Speedy
+
 testSpecs([
   SampleSpec(),
 ])

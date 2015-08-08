@@ -1,7 +1,7 @@
 import Foundation
 import Tasker
 
-enum CompilationResult {
+enum CompilationStatus {
   case Skipped
   case Compiled
 
@@ -11,6 +11,12 @@ enum CompilationResult {
       case .Compiled: return "Compiled"
     }
   }
+}
+
+struct CompilationResult {
+  let status: CompilationStatus
+  let roostfile: Roostfile
+  let package: Package
 }
 
 class Builder {
@@ -49,7 +55,7 @@ class Builder {
     }
   }// checkPreconditions
 
-  private func ensureHaveDependencies() {
+  private func ensureHaveDependencies() -> [CompilationResult] {
     if !fileManager.fileExistsAtPath(vendorDirectory) {
       let created = fileManager.createDirectoryAtPath(vendorDirectory,
                                                       withIntermediateDirectories: true,
@@ -61,9 +67,7 @@ class Builder {
       }
     }
 
-    for dependency in roostfile.dependencies {
-      ensureHaveDependency(dependency)
-    }
+    return roostfile.dependencies.map { return self.ensureHaveDependency($0) }
   }// ensureHaveDependencies
 
   private func compileDependency(dependency: Roostfile.Dependency, _ directory: String) -> CompilationResult {
@@ -77,35 +81,31 @@ class Builder {
     // Save the Roostfile of the dependency for later
     dependency.roostfile = dependencyRoostfile
 
-    let dependencyPackage = dependencyRoostfile.asPackage()
-    let dependencyBuilder = Builder(dependencyPackage)
+    let package = dependencyRoostfile.asPackage()
+    let builder = Builder(package)
+    let status  = builder.compile()
 
-    return dependencyBuilder.compile()
+    return CompilationResult(status: status,
+                             roostfile: dependencyRoostfile,
+                             package: package)
   }// compileDependency
 
 
-  private func ensureHaveDependency(dependency: Roostfile.Dependency) {
+  private func ensureHaveDependency(dependency: Roostfile.Dependency) -> CompilationResult {
     let directory = dependency.inLocalDirectory(vendorDirectory)
 
     if !fileManager.fileExistsAtPath(directory) {
       printAndExit("Missing dependency \(dependency.shortName)")
     }
 
-    // if !fileManager.fileExistsAtPath(directory) {
-    //   cloneDependency(dependency, directory)
-    // } else {
-    //   // TODO: Add flag to enable pulling and such
-    //   // pullDependency(dependency, directory)
-    // }
-
-    compileDependency(dependency, directory)
+    return compileDependency(dependency, directory)
   }// ensureHaveDependency
 
 
-  func compile() -> CompilationResult {
+  func compile() -> CompilationStatus {
     // TODO: Have it return a Bool indicating whether dependencies were
     //       changed to let us know if we need to recompile
-    ensureHaveDependencies()
+    let dependencies = ensureHaveDependencies()
     ensureDirectoryExists(buildDirectory)
 
     checkPreconditions()
@@ -159,21 +159,25 @@ class Builder {
     }
 
     // Include and link against dependencies
-    if roostfile.dependencies.count > 0 {
-      for dep in roostfile.dependencies {
-        let directory = dep.roostfile!.directory
-        let name = dep.moduleName
+    for result in dependencies {
+      let roostfile = result.roostfile
+      let package   = result.package
+      let directory = roostfile.directory
+      let name      = roostfile.name
 
-        let buildPath = "\(directory)/build"
-        arguments.extend(["-I", buildPath, "-L", buildPath])
+      let buildPath = "\(directory)/build"
+      arguments.extend(["-I", buildPath, "-L", buildPath])
 
-        // Link the dependency's module
-        arguments.append("-l\(name)")
+      // Link the dependency's module
+      arguments.append("-l\(name)")
+
+      if let options = hasCompilerOptions(roostfile.compilerOptions, forPackage: package) {
+        arguments.extend(options)
       }
     }
 
     // Append compiler options if we have any
-    if let options = hasCompilerOptions(package.compilerOptions) {
+    if let options = hasCompilerOptions(package.compilerOptions, forPackage: package) {
       arguments.extend(options)
     }
 
@@ -329,7 +333,7 @@ class Builder {
     NSFileManager.defaultManager().removeItemAtPath(temporaryObjectPath, error: &error)
   }
 
-  func compileModule(module: Package.Module) -> CompilationResult {
+  func compileModule(module: Package.Module) -> CompilationStatus {
     // First check if we even need to compile it
     let libraryPath = libraryFilePathForModule(module)
     let libraryModificationDate = getFileModificationDate(libraryPath)
@@ -385,22 +389,24 @@ class Builder {
     }
   }// ensureDirectoryExists
 
-  private func hasCompilerOptions(rawOptions: String) -> [String]? {
+  private func hasCompilerOptions(rawOptions: String, forPackage aPackage: Package) -> [String]? {
     let options = rawOptions.stringByTrimmingCharactersInSet(WhitespaceCharacterSet)
 
     if !isEmpty(options) {
       return (options as NSString)
         .componentsSeparatedByCharactersInSet(WhitespaceCharacterSet)
         .map { $0 as! String }
-        .map { self.formatCompilerOption($0) }
+        .map { self.formatCompilerOption($0, forPackage: aPackage) }
     } else {
       return [String]()
     }
   }
 
-  private func formatCompilerOption(option: String) -> String {
+  private func formatCompilerOption(option: String, forPackage aPackage: Package) -> String {
+    let root = aPackage.directory
+
     return option
-      .stringByReplacingOccurrencesOfString("{root}", withString: rootDirectory)
+      .stringByReplacingOccurrencesOfString("{root}", withString: root)
   }
 
 }

@@ -14,8 +14,8 @@ target_type: executable
 
 dependencies:
   - github: dirk/Tasker
+  - github: dirk/Speedy
 
 test_target:
   sources:
     - RoostTests/
-  compiler_options: "-Xlinker build/Exceptions.o -import-objc-header RoostTests/Support/Exceptions.h"
