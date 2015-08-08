@@ -16,6 +16,7 @@ enum CompilationResult {
 class Builder {
 
   var package: Package
+  var rootDirectory: String
   var buildDirectory: String
   var binDirectory: String
 
@@ -27,6 +28,7 @@ class Builder {
 
   init(_ aPackage: Package) {
     package = aPackage
+    rootDirectory = package.directory
     buildDirectory = "\(package.directory)/build"
     binDirectory = "\(package.directory)/bin"
   }
@@ -222,11 +224,19 @@ class Builder {
 
   private func runPrecompileCommands() {
     let commands = package.roostfile.precompileCommands
+    var index = 1
 
     for command in commands {
       let task = Task("/bin/sh")
-      task.arguments = ["-c", command]
+      let script = "cd \"\(rootDirectory)\"; \(command)"
 
+      println("Running \(roostfile.name) precompile command #\(index)")
+
+      if Flags.Verbose {
+        println(script)
+      }
+
+      task.arguments = ["-c", script]
       task.launchAndWait()
 
       if task.hasAnyOutput() {
@@ -237,6 +247,8 @@ class Builder {
           NSFileHandle.fileHandleWithStandardError().writeData(error)
         }
       }
+      
+      index += 1
     }
   }
 
@@ -380,9 +392,15 @@ class Builder {
       return (options as NSString)
         .componentsSeparatedByCharactersInSet(WhitespaceCharacterSet)
         .map { $0 as! String }
+        .map { self.formatCompilerOption($0) }
     } else {
       return [String]()
     }
+  }
+
+  private func formatCompilerOption(option: String) -> String {
+    return option
+      .stringByReplacingOccurrencesOfString("{root}", withString: rootDirectory)
   }
 
 }
