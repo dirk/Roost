@@ -67,7 +67,16 @@ class Builder {
       }
     }
 
-    return roostfile.dependencies.map { return self.ensureHaveDependency($0) }
+    let dependenciesToBuild = roostfile.dependencies.filter {
+      // Include everything in a test target
+      if self.package.forTest { return true }
+
+      if $0.onlyTest { return false }
+
+      return true
+    }
+
+    return dependenciesToBuild.map { return self.ensureHaveDependency($0) }
   }// ensureHaveDependencies
 
   private func compileDependency(dependency: Roostfile.Dependency, _ directory: String) -> CompilationResult {

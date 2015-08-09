@@ -5,6 +5,8 @@ extension Roostfile {
 
     var github: String?
 
+    var onlyTest: Bool = false
+
     // Roostfile of the dependency
     var roostfile: Roostfile?
 

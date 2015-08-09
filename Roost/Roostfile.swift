@@ -193,14 +193,20 @@ class Roostfile {
 
   func parseDependency(yaml: Yaml) {
     if let github = yaml["github"].string {
-      parseGithubDependency(github)
+      parseGithubDependency(github, yaml: yaml)
     } else {
       println("Invalid dependency format"); exit(1)
     }
   }
 
-  func parseGithubDependency(github: String) {
-    dependencies.append(Dependency(github: github))
+  func parseGithubDependency(github: String, yaml: Yaml) {
+    let dep = Dependency(github: github)
+
+    if let onlyTest = yaml["only_test"].bool {
+      dep.onlyTest = onlyTest
+    }
+
+    dependencies.append(dep)
   }
 
   func parseTestTarget(yaml: Yaml) {
