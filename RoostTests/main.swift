@@ -1,5 +1,5 @@
 import Speedy
 
 testSpecs([
-  SampleSpec(),
+  RoostfileSpec(),
 ])
