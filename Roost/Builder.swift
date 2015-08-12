@@ -55,30 +55,6 @@ class Builder {
     }
   }// checkPreconditions
 
-  private func ensureHaveDependencies() -> [CompilationResult] {
-    if !fileManager.fileExistsAtPath(vendorDirectory) {
-      let created = fileManager.createDirectoryAtPath(vendorDirectory,
-                                                      withIntermediateDirectories: true,
-                                                      attributes: nil,
-                                                      error: nil)
-
-      if !created {
-        printAndExit("Failed to create vendor directory: \(vendorDirectory)")
-      }
-    }
-
-    let dependenciesToBuild = roostfile.dependencies.filter {
-      // Include everything in a test target
-      if self.package.forTest { return true }
-
-      if $0.onlyTest { return false }
-
-      return true
-    }
-
-    return dependenciesToBuild.map { return self.ensureHaveDependency($0) }
-  }// ensureHaveDependencies
-
   private func compileDependency(dependency: Roostfile.Dependency, _ directory: String) -> CompilationResult {
     let path = "\(directory)/Roostfile.yaml"
     let contents = readFile(path)
@@ -112,10 +88,13 @@ class Builder {
 
 
   func compile() -> CompilationStatus {
+    ensureDirectoryExists(vendorDirectory)
+    ensureDirectoryExists(buildDirectory)
+
     // TODO: Have it return a Bool indicating whether dependencies were
     //       changed to let us know if we need to recompile
-    let dependencies = ensureHaveDependencies()
-    ensureDirectoryExists(buildDirectory)
+    let dependencies = computeDependenciesToBuild()
+      .map { return self.ensureHaveDependency($0) }
 
     checkPreconditions()
     runPrecompileCommands()
@@ -416,6 +395,17 @@ class Builder {
 
     return option
       .stringByReplacingOccurrencesOfString("{root}", withString: root)
+  }
+
+  private func computeDependenciesToBuild() -> [Roostfile.Dependency] {
+    return roostfile.dependencies.filter { (dependency: Roostfile.Dependency) -> Bool in
+      // Include everything in a test target
+      if self.package.forTest { return true }
+
+      if dependency.onlyTest { return false }
+
+      return true
+    }
   }
 
 }
