@@ -76,6 +76,9 @@ class Runner {
       printAndExit("Missing test target")
     }
 
+    // Force it to be building the test executable
+    roostfile.targetType = .Executable
+
     let testPackage = roostfile.asPackageForTest()
 
     Builder(testPackage).compile()
