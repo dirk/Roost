@@ -11,6 +11,7 @@ class Package {
   var compilerOptions: String
   var forTest: Bool = false
   var includeSDKPlatformInRpath: Bool = false
+  var includeSDKPlatformInFrameworkPath: Bool = false
 
   var targetType: TargetType {
     get { return roostfile.targetType }
@@ -52,9 +53,10 @@ class Package {
     lastModificationDate = NSDate()
 
     // Testing-specific configuration for Builder
-    binFileName               = "test-\(roostfile.name.lowercaseString)"
-    forTest                   = true
-    includeSDKPlatformInRpath = true
+    binFileName                       = "test-\(roostfile.name.lowercaseString)"
+    forTest                           = true
+    includeSDKPlatformInRpath         = true
+    includeSDKPlatformInFrameworkPath = true
   }
 
   /**

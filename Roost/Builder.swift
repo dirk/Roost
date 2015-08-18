@@ -123,9 +123,16 @@ class Builder {
       rpaths.append("@executable_path/../\(path)")
     }
 
+    var platformPath = ""
+    if package.includeSDKPlatformInRpath || package.includeSDKPlatformInFrameworkPath {
+      platformPath = getSDKPlatformPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
+    }
+
     if package.includeSDKPlatformInRpath {
-      let platformPath = getSDKPlatformPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
       rpaths.append("\(platformPath)/Developer/Library/Frameworks")
+    }
+    if package.includeSDKPlatformInFrameworkPath {
+      arguments.extend(["-F", "\(platformPath)/Developer/Library/Frameworks"])
     }
 
     for path in rpaths {
