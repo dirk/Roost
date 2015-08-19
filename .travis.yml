@@ -6,7 +6,7 @@ before_install:
   # - 'echo "--netrc" >> ~/.curlrc'
   # - 'echo -e "machine github.com login $GITHUB_PASSWORD" > ~/.netrc'
   # - "chmod 600 ~/.netrc"
-  - "brew install carthage"
+  - "brew install carthage libssh2"
   - "cd vendor && carthage bootstrap --platform mac --no-use-binaries --verbose"
   - "cd $TRAVIS_BUILD_DIR"
 
