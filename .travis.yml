@@ -3,8 +3,11 @@ osx_image: beta-xcode6.3
 
 before_install:
   - "sudo xcode-select --install || true"
+  # - 'echo "--netrc" >> ~/.curlrc'
+  # - 'echo -e "machine github.com login $GITHUB_PASSWORD" > ~/.netrc'
+  # - "chmod 600 ~/.netrc"
   - "brew install carthage"
-  - "cd vendor && carthage bootstrap --platform mac"
+  - "cd vendor && carthage bootstrap --platform mac --no-use-binaries"
   - "cd $TRAVIS_BUILD_DIR"
 
 install: "make"
