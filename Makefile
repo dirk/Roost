@@ -7,6 +7,9 @@ FRAMEWORKS=-F vendor/Carthage/Build/Mac -Xlinker -rpath -Xlinker @executable_pat
 OPTS_FOR_OBJC=#-Xlinker build/Exceptions.o -import-objc-header RoostTests/Support/Exceptions.h
 OPTS_FOR_MODULES=-I build -L build -lTasker -lMessagePack
 
+DUMMY_BUILD_DIR:=$(shell mkdir -p build)
+DUMMY_BIN_DIR:=$(shell mkdir -p build)
+
 bin/roost: $(SOURCES) \
 		build/Tasker.swiftmodule build/libTasker.a \
 		build/MessagePack.swiftmodule build/libMessagePack.a
