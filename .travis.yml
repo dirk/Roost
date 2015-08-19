@@ -7,7 +7,7 @@ before_install:
   # - 'echo -e "machine github.com login $GITHUB_PASSWORD" > ~/.netrc'
   # - "chmod 600 ~/.netrc"
   - "brew install carthage"
-  - "cd vendor && carthage bootstrap --platform mac --no-use-binaries"
+  - "cd vendor && carthage bootstrap --platform mac --no-use-binaries --verbose"
   - "cd $TRAVIS_BUILD_DIR"
 
 install: "make"
