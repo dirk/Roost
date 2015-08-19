@@ -8,7 +8,7 @@ OPTS_FOR_OBJC=#-Xlinker build/Exceptions.o -import-objc-header RoostTests/Suppor
 OPTS_FOR_MODULES=-I build -L build -lTasker -lMessagePack
 
 DUMMY_BUILD_DIR:=$(shell mkdir -p build)
-DUMMY_BIN_DIR:=$(shell mkdir -p build)
+DUMMY_BIN_DIR:=$(shell mkdir -p bin)
 
 bin/roost: $(SOURCES) \
 		build/Tasker.swiftmodule build/libTasker.a \
