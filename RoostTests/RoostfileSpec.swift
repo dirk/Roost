@@ -16,7 +16,7 @@ class RoostfileSpec: Spec {
   }
 
   func spec() {
-    describe("when parsing") {
+    describe("when parsing valid Roostfiles") {
       var r: Roostfile!
 
       beforeEach {
@@ -33,6 +33,19 @@ class RoostfileSpec: Spec {
         expect(r.sources.count).to(equal(2))
         expect(r.sources[0]).to(equal("TestFile.swift"))
         expect(r.sources[1]).to(equal("TestDirectory/"))
+      }
+    }
+    describe("when parsing invalid Roostfiles") {
+      var r: Roostfile!
+
+      beforeEach {
+        r = Roostfile()
+      }
+
+      it("should not parse invalid properties") {
+        let error = r.parseFromString("bad_property: bad")
+        expect(error).toNot(beNil())
+        expect(error!.message).to(contain("bad_property"))
       }
     }
   }
