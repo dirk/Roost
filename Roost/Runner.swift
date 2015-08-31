@@ -81,6 +81,25 @@ class Runner {
 
     let testPackage = roostfile.asPackageForTest()
 
+    let testEntrance = testPackage.sourceFiles.filter {
+      return $0.contains("main.swift")
+    }
+    if testEntrance.count != 1 {
+      printAndExit("Missing entrace 'main.swift' in test sources")
+    }
+
+    let builder = Builder(testPackage)
+    let mainObject = "\(builder.buildDirectory)/main.swift.o"
+
+    if fileExists(mainObject) {
+      var error: NSError?
+      NSFileManager.defaultManager().removeItemAtPath(mainObject, error: &error)
+
+      if error != nil {
+        printAndExit("Unable to remove entrace object file: \(error!.description)")
+      }
+    }
+
     Builder(testPackage).compile()
 
     TestRunner(testPackage).run()

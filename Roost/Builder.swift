@@ -19,30 +19,70 @@ struct CompilationResult {
   let package: Package
 }
 
+class CompileOptions {
+  var sourceFiles = [String]()
+  var includes = [String]()
+  var frameworkSearchPaths = [String]()
+  var customCompilerOptions = [String]()
+  
+  // Linker options
+  var rpaths = [String]()
+  var linkerSearchDirectories = [String]()
+  var linkLibraries = [String]()
+  var customLinkerOptions = [String]()
+}
+
 class Builder {
 
   var package: Package
   var rootDirectory: String
   var buildDirectory: String
   var binDirectory: String
-
+  var compileOptions = CompileOptions()
+  
   var fileManager: NSFileManager     { get { return NSFileManager.defaultManager() } }
-
   var roostfile: Roostfile           { get { return package.roostfile } }
   var vendorDirectory: String        { get { return package.vendorDirectory } }
   var frameworkSearchPaths: [String] { get { return roostfile.frameworkSearchPaths } }
+  var sdkPath: String = ""
 
   init(_ aPackage: Package) {
     package = aPackage
     rootDirectory = package.directory
     buildDirectory = "\(package.directory)/build"
     binDirectory = "\(package.directory)/bin"
+    
+    sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
   }
 
   private func commonCompilerArguments() -> [String] {
-    let sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
-
     return ["swiftc", "-sdk", sdkPath]
+  }
+
+  private func commonModuleCompilerArguments() -> [String] {
+    var arguments = ["swiftc", "-sdk", sdkPath]
+
+    for rpath in compileOptions.rpaths {
+      arguments.extend(["-Xlinker", "-rpath", "-Xlinker", rpath])
+    }
+    for framework in compileOptions.frameworkSearchPaths {
+      arguments.extend(["-F", framework])
+    }
+    for directory in compileOptions.linkerSearchDirectories {
+      arguments.extend(["-L", directory])
+    }
+    for library in compileOptions.linkLibraries {
+      arguments.append("-l\(library)")
+    }
+
+    for argument in compileOptions.customCompilerOptions {
+      arguments.append(argument)
+    }
+    for argument in compileOptions.customLinkerOptions {
+      arguments.extend(["-Xlinker", argument])
+    }
+
+    return arguments
   }
 
   private func modulePathForPackage() -> String {
@@ -110,46 +150,38 @@ class Builder {
     var arguments = commonCompilerArguments()
 
     // Compile all of the sources
-    arguments.extend(package.sourceFiles)
-
-
-    var rpaths = [String]()
+    compileOptions.sourceFiles = Array<String>(package.sourceFiles)
 
     // Add any framework search paths
     for path in frameworkSearchPaths {
       // Compiler framework support
-      arguments.extend(["-F", path])
+      compileOptions.frameworkSearchPaths.append(path)
 
-      rpaths.append("@executable_path/../\(path)")
+      compileOptions.rpaths.append("@executable_path/../\(path)")
     }
 
     var platformPath = ""
     if package.includeSDKPlatformInRpath || package.includeSDKPlatformInFrameworkPath {
       platformPath = getSDKPlatformPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
-    }
 
-    if package.includeSDKPlatformInRpath {
-      rpaths.append("\(platformPath)/Developer/Library/Frameworks")
-    }
-    if package.includeSDKPlatformInFrameworkPath {
-      arguments.extend(["-F", "\(platformPath)/Developer/Library/Frameworks"])
-    }
-
-    for path in rpaths {
-      // Linker framework support
-      arguments.extend(["-Xlinker", "-rpath", "-Xlinker", path])
+      if package.includeSDKPlatformInRpath {
+        compileOptions.rpaths.append("\(platformPath)/Developer/Library/Frameworks")
+      }
+      if package.includeSDKPlatformInFrameworkPath {
+        compileOptions.frameworkSearchPaths.append("\(platformPath)/Developer/Library/Frameworks")
+      }
     }
 
 
     // If we have built modules to include and link against
     if roostfile.modules.count > 0 {
       // Set search path for the modules
-      arguments.extend(["-I", "build"])
-      arguments.extend(["-L", "build"])
+      compileOptions.includes.append("build")
+      compileOptions.linkerSearchDirectories.append("build")
 
       // Link the modules
       for (_, module) in roostfile.modules {
-        arguments.append("-l\(module.name)")
+        compileOptions.linkLibraries.append(module.name)
       }
     }
 
@@ -161,19 +193,25 @@ class Builder {
       let name      = roostfile.name
 
       let buildPath = "\(directory)/build"
-      arguments.extend(["-I", buildPath, "-L", buildPath])
+      compileOptions.includes.append(buildPath)
+      compileOptions.linkerSearchDirectories.append(buildPath)
 
-      // Link the dependency's module
-      arguments.append("-l\(name)")
+      compileOptions.linkLibraries.append(name)
 
-      if let options = hasCompilerOptions(roostfile.compilerOptions, forPackage: package) {
-        arguments.extend(options)
+      if let options = hasCustomOptions(roostfile.compilerOptions, forPackage: package) {
+        compileOptions.customCompilerOptions.extend(options)
+      }
+      if let options = hasCustomOptions(roostfile.linkerOptions, forPackage: package) {
+        compileOptions.customLinkerOptions.extend(options)
       }
     }
 
     // Append compiler options if we have any
-    if let options = hasCompilerOptions(package.compilerOptions, forPackage: package) {
-      arguments.extend(options)
+    if let options = hasCustomOptions(package.compilerOptions, forPackage: package) {
+      compileOptions.customCompilerOptions.extend(options)
+    }
+    if let options = hasCustomOptions(package.linkerOptions, forPackage: package) {
+      compileOptions.customLinkerOptions.extend(options)
     }
 
     switch package.targetType {
@@ -193,13 +231,39 @@ class Builder {
           }
         }
 
-        // And set the location of the output executable
-        arguments.append("-o")
-        arguments.append(binFilePath)
+        // Default to saying it didn't compile; however default to true if
+        // there weren't any source files.
+        var didCompile = !(compileOptions.sourceFiles.count > 0)
 
-        announceAndRunTask("Compiling \(binFilePath)... ",
-                           arguments: arguments,
-                           finished: "Compiled \(roostfile.name) to \(binFilePath)")
+        for source in compileOptions.sourceFiles {
+          var needsRecompilation = true
+          let missingObject = !fileExists(objectFileForSourceFile(source))
+
+          if let targetDate = binFileModificationDate {
+            needsRecompilation = sourceNeedsRecompilation(source,
+                                                          targetDate: targetDate)
+          } 
+          if !missingObject &&
+             !needsRecompilation &&
+             !Flags.MustRecompile
+          {
+            continue
+          }
+
+          compileSourceToObject(source)
+          didCompile = true
+        }
+
+        // Link if we compiled objects
+        if didCompile {
+          var linkerArguments = buildLinkerArguments()
+          linkerArguments.extend(["-o", binFilePath])
+
+          announceAndRunTask("Linking \(binFilePath)... ",
+                             arguments: linkerArguments,
+                             finished: "Linked \(roostfile.name) to \(binFilePath)")
+        }
+
 
       case .Module:
         let swiftModuleTarget = modulePathForPackage()
@@ -210,9 +274,10 @@ class Builder {
         {
           return .Skipped
         }
+
         // Do need to recompile
-        compileStaticLibrary(arguments)
-        compileSwiftModule(arguments)
+        compileStaticLibrary()
+        compileSwiftModule()
 
       default:
         assert(false, "Target type switch fell through: \(package.targetType)")
@@ -251,8 +316,9 @@ class Builder {
     }
   }
 
-  private func compileSwiftModule(baseArguments: [String]) {
-    var arguments = baseArguments
+  private func compileSwiftModule() {
+    var arguments = commonModuleCompilerArguments()
+    arguments.extend(compileOptions.sourceFiles)
 
     let modulePath = modulePathForPackage()
 
@@ -264,8 +330,9 @@ class Builder {
                        finished: "Created \(roostfile.name) module at \(modulePath)")
   }
 
-  private func compileStaticLibrary(baseArguments: [String]) {
-    var arguments = baseArguments
+  private func compileStaticLibrary() {
+    var arguments = commonModuleCompilerArguments()
+    arguments.extend(compileOptions.sourceFiles)
 
     let objectFilePath  = "\(buildDirectory)/tmp-\(roostfile.name).o"
     let libraryFilePath = "\(buildDirectory)/lib\(roostfile.name).a"
@@ -339,7 +406,7 @@ class Builder {
       }
     }
 
-    var arguments = commonCompilerArguments()
+    var arguments = commonModuleCompilerArguments()
     arguments.extend(module.sourceFiles)
 
     // Compile the Swift module
@@ -364,6 +431,85 @@ class Builder {
     return true
   }
 
+  func sourceNeedsRecompilation(source: String, targetDate: NSDate) -> Bool {
+    let sourceDate = getFileModificationDate(source)!
+
+    if sourceDate.isNewerThan(targetDate) {
+      return true
+    }
+    return false
+  }
+
+  func compileSourceToObject(sourceFile: String) -> String {
+    var arguments = ["swiftc", "-frontend", "-c"]
+
+    for s in compileOptions.sourceFiles {
+      if s == sourceFile { arguments.append("-primary-file") }
+      arguments.append(s)
+    }
+
+    arguments.extend(["-target", "x86_64-apple-darwin14.4.0", "-enable-objc-interop"])
+    arguments.extend(["-sdk", sdkPath])
+
+    for i in compileOptions.includes {
+      arguments.extend(["-I", i])
+    }
+    for f in compileOptions.frameworkSearchPaths {
+      arguments.extend(["-F", f])
+    }
+
+    arguments.extend(compileOptions.customCompilerOptions)
+    arguments.extend(["-color-diagnostics", "-module-name", "main"])
+
+    let filename = (sourceFile as NSString).lastPathComponent
+    let object = objectFileForSourceFile(sourceFile)
+    arguments.extend(["-o", object])
+
+    announceAndRunTask("Compiling \(filename)... ",
+                       arguments: arguments,
+                       finished: "Compiled \(filename)")
+    return object
+  }
+
+  func objectFileForSourceFile(source: String) -> String {
+    let filename = (source as NSString).lastPathComponent
+    return "\(buildDirectory)/\(filename).o"
+  }
+
+  func buildLinkerArguments() -> [String] {
+    var arguments = ["ld"]
+
+    for source in compileOptions.sourceFiles {
+      let filename = (source as NSString).lastPathComponent
+      arguments.append("\(self.buildDirectory)/\(filename).o")
+    }
+    for rpath in compileOptions.rpaths {
+      arguments.extend(["-rpath", rpath])
+    }
+    for framework in compileOptions.frameworkSearchPaths {
+      arguments.extend(["-F", framework])
+    }
+    for directory in compileOptions.linkerSearchDirectories {
+      arguments.extend(["-L", directory])
+    }
+    for library in compileOptions.linkLibraries {
+      arguments.append("-l\(library)")
+    }
+
+    arguments.extend(compileOptions.customLinkerOptions)
+    arguments.extend([
+      "-arch", "x86_64",
+      "-syslibroot", sdkPath, "-lSystem",
+      "-L",     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
+      "-rpath", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
+      "-macosx_version_min", "10.10.0",
+      "-no_objc_category_merging",
+    ])
+
+    return arguments
+  }
+
+
 // Internal utitlies
 
   private func readPipeToString(pipe: NSPipe) -> NSString {
@@ -384,7 +530,7 @@ class Builder {
     }
   }// ensureDirectoryExists
 
-  private func hasCompilerOptions(rawOptions: String, forPackage aPackage: Package) -> [String]? {
+  private func hasCustomOptions(rawOptions: String, forPackage aPackage: Package) -> [String]? {
     let options = rawOptions.stringByTrimmingCharactersInSet(WhitespaceCharacterSet)
 
     if !isEmpty(options) {
