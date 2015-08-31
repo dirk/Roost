@@ -38,12 +38,14 @@ class Roostfile {
   var sources                 = [String]()
   var frameworkSearchPaths    = [String]()
   var compilerOptions         = ""
+  var linkerOptions           = ""
   var precompileCommands      = [String]()
   var modules                 = Dictionary<String, Roostfile.Module>()
   var dependencies            = Array<Roostfile.Dependency>()
   var targetType: TargetType  = .Unknown
   var testTarget: TestTarget?
   var testCompilerOptions: String = ""
+  var testLinkerOptions: String   = ""
 
   struct ParsingError {
     let message: String
@@ -70,6 +72,7 @@ class Roostfile {
     let failableActionMap = [
       "test_target":            self.parseTestTarget,
       "compiler_options":       self.parseCompilerOptions,
+      "linker_options":         self.parseLinkerOptions,
     ]
 
     if let dictionary = yaml.value!.dictionary {
@@ -234,6 +237,9 @@ class Roostfile {
     if let options = yaml["compiler_options"].string {
       testCompilerOptions = options
     }
+    if let options = yaml["linker_options"].string {
+      testLinkerOptions = options
+    }
 
     self.testTarget = testTarget
     return nil
@@ -248,6 +254,14 @@ class Roostfile {
 
     self.compilerOptions = options!
     return nil
+  }
+  func parseLinkerOptions(yaml: Yaml) -> ParsingError? {
+    if let options = yaml.string {
+      self.linkerOptions = options
+      return nil
+    } else {
+      return ParsingError(message: "Invalid (non-string) compiler options")
+    }
   }
 
 

@@ -9,6 +9,7 @@ class Package {
 
   var binFileName: String!
   var compilerOptions: String
+  var linkerOptions: String
   var forTest: Bool = false
   var includeSDKPlatformInRpath: Bool = false
   var includeSDKPlatformInFrameworkPath: Bool = false
@@ -26,6 +27,7 @@ class Package {
   init(_ r: Roostfile) {
     roostfile       = r
     compilerOptions = roostfile.compilerOptions
+    linkerOptions   = roostfile.linkerOptions
 
     sourceFiles          = scanSources(roostfile.sources)
     lastModificationDate = computeLastModificationDate(sourceFiles)
@@ -43,6 +45,7 @@ class Package {
   init(testSources: [String], forRoostfile r: Roostfile) {
     roostfile       = r
     compilerOptions = "\(roostfile.compilerOptions) \(roostfile.testCompilerOptions)"
+    linkerOptions   = "\(roostfile.linkerOptions) \(roostfile.testCompilerOptions)"
 
     let primaryFiles = scanSources(roostfile.sources).filter {
       return !$0.contains("main.swift")
