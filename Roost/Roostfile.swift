@@ -45,15 +45,19 @@ class Roostfile {
   var testTarget: TestTarget?
   var testCompilerOptions: String = ""
 
-  func parseFromString(string: String) {
+  struct ParsingError {
+    let message: String
+  }
+
+  func parseFromString(string: String) -> ParsingError? {
     let yaml = Yaml.load(string)
 
     if let error = yaml.error {
-      printAndExit(error)
+      return ParsingError(message: error)
     }
 
     // Map names to processors
-    let map = [
+    let unfailableActionMap = [
       "name":                   self.parseName,
       "version":                self.parseVersion,
       "sources":                self.parseSources,
@@ -61,30 +65,37 @@ class Roostfile {
       "framework_search_paths": self.parseFrameworkSearchPaths,
       "target_type":            self.parseTargetType,
       "dependencies":           self.parseDependencies,
+      "precompile_commands":    self.parsePrecompileCommands,
+    ]
+    let failableActionMap = [
       "test_target":            self.parseTestTarget,
       "compiler_options":       self.parseCompilerOptions,
-      "precompile_commands":    self.parsePrecompileCommands,
     ]
 
     if let dictionary = yaml.value!.dictionary {
       for (keyYaml, valueYaml) in dictionary {
         if let key = keyYaml.string {
-          if let action = map[key] {
-            action(valueYaml)
-            continue
-          } else {
-            printAndExit("Can't parse key '\(key)'")
-          }
+          if let action = failableActionMap[key] {
+            let error = action(valueYaml)
+            if error != nil { return error }
 
+          } else if let action = unfailableActionMap[key] {
+            action(valueYaml)
+
+          } else {
+            return ParsingError(message: "Can't parse key '\(key)'")
+          }
+          continue
         } else {
-          printAndExit("Can't parse key")
+          return ParsingError(message: "Can't parse key")
         }
       }// for
 
     } else {
-      printAndExit("Can't parse document; expected dictionary")
+      return ParsingError(message: "Can't parse document; expected dictionary")
     }
 
+    return nil
   }// parseFromString
 
   func asPackage() -> Package {
@@ -209,7 +220,7 @@ class Roostfile {
     dependencies.append(dep)
   }
 
-  func parseTestTarget(yaml: Yaml) {
+  func parseTestTarget(yaml: Yaml) -> ParsingError? {
     var testTarget = TestTarget()
 
     if let hasSources = yaml["sources"].array {
@@ -217,7 +228,7 @@ class Roostfile {
         return s.string!
       }
     } else {
-      printAndExit("Missing `sources` array in test target")
+      return ParsingError(message: "Missing `sources` array in test target")
     }
 
     if let options = yaml["compiler_options"].string {
@@ -225,16 +236,18 @@ class Roostfile {
     }
 
     self.testTarget = testTarget
+    return nil
   }
 
-  func parseCompilerOptions(yaml: Yaml) {
+  func parseCompilerOptions(yaml: Yaml) -> ParsingError? {
     let options = yaml.string
 
     if options == nil {
-      printAndExit("Invalid (non-string) compiler options")
+      return ParsingError(message: "Invalid (non-string) compiler options")
     }
 
     self.compilerOptions = options!
+    return nil
   }
 
 
