@@ -478,8 +478,7 @@ class Builder {
     var arguments = ["ld"]
 
     for source in compileOptions.sourceFiles {
-      let filename = (source as NSString).lastPathComponent
-      arguments.append("\(self.buildDirectory)/\(filename).o")
+      arguments.append(objectFileForSourceFile(source))
     }
     for rpath in compileOptions.rpaths {
       arguments.extend(["-rpath", rpath])
