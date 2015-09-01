@@ -6,6 +6,7 @@ FRAMEWORKS=-F vendor/Carthage/Build/Mac -Xlinker -rpath -Xlinker @executable_pat
 
 OPTS_FOR_OBJC=#-Xlinker build/Exceptions.o -import-objc-header RoostTests/Support/Exceptions.h
 OPTS_FOR_MODULES=-I build -L build -lTasker -lMessagePack
+OPTS_FOR_SWIFTC=-import-objc-header Roost/BridgingHeader.h
 
 DUMMY_BUILD_DIR:=$(shell mkdir -p build)
 DUMMY_BIN_DIR:=$(shell mkdir -p bin)
@@ -15,7 +16,7 @@ bin/roost: $(SOURCES) \
 		build/MessagePack.swiftmodule build/libMessagePack.a
 	$(eval sources = $(filter %.swift, $^))
 	@# Build with the sources and the modules
-	$(SWIFTC) $(sources) $(OPTS_FOR_MODULES) $(OPTS_FOR_OBJC) $(FRAMEWORKS) -o $@
+	$(SWIFTC) $(sources) $(OPTS_FOR_MODULES) $(OPTS_FOR_OBJC) $(OPTS_FOR_SWIFTC) $(FRAMEWORKS) -o $@
 
 
 build/Tasker.swiftmodule: Tasker/*.swift
