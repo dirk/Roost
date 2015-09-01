@@ -185,4 +185,26 @@ extension String {
   func contains(other: String) -> Bool {
     return self.rangeOfString(other) != nil
   }
+
+  func computeMD5() -> String {
+    let cString = cStringUsingEncoding(NSUTF8StringEncoding)
+    let cStringLength = CUnsignedInt(lengthOfBytesUsingEncoding(NSUTF8StringEncoding))
+
+    let digestLength = Int(CC_MD5_DIGEST_LENGTH)
+    let result = UnsafeMutablePointer<CUnsignedChar>.alloc(digestLength)
+
+    CC_MD5(cString!, cStringLength, result)
+
+    var hash = NSMutableString()
+    for i in 0..<digestLength {
+      hash.appendFormat("%02x", result[i])
+    }
+
+    result.destroy()
+    return String(hash)
+  }
+}
+
+func md5File(path: String) -> String {
+  return readFile(path).computeMD5()
 }

@@ -11,6 +11,7 @@ modules:
     sources:
       - vendor/MessagePack/Source/
 target_type: executable
+compiler_options: "-import-objc-header {root}/Roost/BridgingHeader.h"
 
 dependencies:
   - github: dirk/Tasker
