@@ -222,28 +222,19 @@ class Builder {
         let binFilePath = "\(binDirectory)/\(package.binFileName)"
         let binFileModificationDate = getFileModificationDate(binFilePath)
 
-        if let date = binFileModificationDate {
-          let targetNewer = date.isNewerThan(package.lastModificationDate)
-          // Don't bother compiling if we haven't been modified since the last
-          // target was built
-          if !modulesCompiled && targetNewer && !Flags.MustRecompile {
-            return .Skipped
-          }
-        }
-
         // Default to saying it didn't compile; however default to true if
         // there weren't any source files.
         var didCompile = !(compileOptions.sourceFiles.count > 0)
 
         for source in compileOptions.sourceFiles {
           var needsRecompilation = true
-          let missingObject = !fileExists(objectFileForSourceFile(source))
+          let missingObjectFile = !fileExists(objectFileForSourceFile(source))
 
           if let targetDate = binFileModificationDate {
             needsRecompilation = sourceNeedsRecompilation(source,
                                                           targetDate: targetDate)
           } 
-          if !missingObject &&
+          if !missingObjectFile &&
              !needsRecompilation &&
              !Flags.MustRecompile
           {
@@ -418,27 +409,7 @@ class Builder {
     return .Compiled
   }
 
-  func needsRecompilation(sources: [String], _ target: String) -> Bool {
-    // First check if we even need to compile it
-    let sourcesDate = package.computeLastModificationDate(sources)
-    let targetModificationDate = getFileModificationDate(target)
-
-    if let date = targetModificationDate {
-      if date.isNewerThan(sourcesDate) {
-        return false
-      }
-    }
-    return true
-  }
-
-  func sourceNeedsRecompilation(source: String, targetDate: NSDate) -> Bool {
-    let sourceDate = getFileModificationDate(source)!
-
-    if sourceDate.isNewerThan(targetDate) {
-      return true
-    }
-    return false
-  }
+// Compilation utilities
 
   func compileSourceToObject(sourceFile: String) -> String {
     var arguments = ["swiftc", "-frontend", "-c"]
@@ -471,9 +442,36 @@ class Builder {
     return object
   }
 
+
+// Utility functions
+
+  func needsRecompilation(sources: [String], _ target: String) -> Bool {
+    // First check if we even need to compile it
+    let sourcesDate = package.computeLastModificationDate(sources)
+    let targetModificationDate = getFileModificationDate(target)
+
+    if let date = targetModificationDate {
+      if date.isNewerThan(sourcesDate) {
+        return false
+      }
+    }
+    return true
+  }
+
+  func sourceNeedsRecompilation(source: String, targetDate: NSDate) -> Bool {
+    let sourceDate = getFileModificationDate(source)!
+
+    if sourceDate.isNewerThan(targetDate) {
+      return true
+    }
+    return false
+  }
+
   func objectFileForSourceFile(source: String) -> String {
     let filename = (source as NSString).lastPathComponent
-    return "\(buildDirectory)/\(filename).o"
+    let hash     = (md5File(source) as NSString).substringToIndex(6)
+
+    return "\(buildDirectory)/\(filename)-\(hash).o"
   }
 
   func buildLinkerArguments() -> [String] {
