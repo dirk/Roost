@@ -467,9 +467,9 @@ class Builder {
     return false
   }
 
-  func objectFileForSourceFile(source: String) -> String {
-    let filename = (source as NSString).lastPathComponent
-    let hash     = (md5File(source) as NSString).substringToIndex(6)
+  func objectFileForSourceFile(path: String) -> String {
+    let filename = (path as NSString).lastPathComponent
+    let hash     = (path.computeMD5() as NSString).substringToIndex(6)
 
     return "\(buildDirectory)/\(filename)-\(hash).o"
   }
