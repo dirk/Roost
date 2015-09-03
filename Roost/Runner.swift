@@ -32,6 +32,7 @@ class Runner {
       case "list":    list()
       case "update":  update()
       case "test":    test()
+      case "clean":   clean()
       default:        printAndExit("Invalid command: '\(command)'")
     }
   }
@@ -103,6 +104,26 @@ class Runner {
     Builder(testPackage).compile()
 
     TestRunner(testPackage).run()
+  }
+
+  private func clean() {
+    let package = roostfile.asPackage()
+    let buildDirectory = "\(package.directory)/build"
+    let fileManager = NSFileManager()
+    let enumerator = fileManager.enumeratorAtPath(buildDirectory)!
+
+    for file in enumerator {
+      if !file.hasSuffix(".o") { continue }
+
+      let path = "\(buildDirectory)/\(file as! String)"
+      var error: NSError?
+
+      fileManager.removeItemAtPath(path, error: &error)
+
+      if let error = error {
+        printAndExit("Error removing file: \(error.description)")
+      }
+    }
   }
 
 
@@ -206,6 +227,7 @@ class Runner {
     println("  inspect  Show project details")
     println("  list     List all packages in the index")
     println("  update   Update (or fetch if not present) project dependencies")
+    println("  clean    Remove intermediate build files")
     println("")
   }
 
