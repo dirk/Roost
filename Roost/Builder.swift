@@ -4,11 +4,13 @@ import Tasker
 enum CompilationStatus {
   case Skipped
   case Compiled
+  case Failed
 
   var description: String {
     switch self {
       case .Skipped:  return "Skipped"
       case .Compiled: return "Compiled"
+      case .Failed:   return "Failed"
     }
   }
 }
@@ -24,7 +26,7 @@ class CompileOptions {
   var includes = [String]()
   var frameworkSearchPaths = [String]()
   var customCompilerOptions = [String]()
-  
+
   // Linker options
   var rpaths = [String]()
   var linkerSearchDirectories = [String]()
@@ -39,7 +41,7 @@ class Builder {
   var buildDirectory: String
   var binDirectory: String
   var compileOptions = CompileOptions()
-  
+
   var fileManager: NSFileManager     { get { return NSFileManager.defaultManager() } }
   var roostfile: Roostfile           { get { return package.roostfile } }
   var vendorDirectory: String        { get { return package.vendorDirectory } }
@@ -51,7 +53,7 @@ class Builder {
     rootDirectory = package.directory
     buildDirectory = "\(package.directory)/build"
     binDirectory = "\(package.directory)/bin"
-    
+
     sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
   }
 
@@ -233,7 +235,7 @@ class Builder {
           if let targetDate = binFileModificationDate {
             needsRecompilation = sourceNeedsRecompilation(source,
                                                           targetDate: targetDate)
-          } 
+          }
           if !missingObjectFile &&
              !needsRecompilation &&
              !Flags.MustRecompile
@@ -241,7 +243,14 @@ class Builder {
             continue
           }
 
-          compileSourceToObject(source)
+          let (exitStatus, _) = compileSourceToObject(source)
+
+          if exitStatus != 0 {
+            let filename = (source as NSString).lastPathComponent
+            println("Compilation of \(filename) failed with status \(exitStatus)")
+            return .Failed
+          }
+
           didCompile = true
         }
 
@@ -302,7 +311,7 @@ class Builder {
           NSFileHandle.fileHandleWithStandardError().writeData(error)
         }
       }
-      
+
       index += 1
     }
   }
@@ -411,7 +420,7 @@ class Builder {
 
 // Compilation utilities
 
-  func compileSourceToObject(sourceFile: String) -> String {
+  func compileSourceToObject(sourceFile: String) -> (Int, String) {
     var arguments = ["swiftc", "-frontend", "-c"]
 
     for s in compileOptions.sourceFiles {
@@ -436,10 +445,10 @@ class Builder {
     let object = objectFileForSourceFile(sourceFile)
     arguments.extend(["-o", object])
 
-    announceAndRunTask("Compiling \(filename)... ",
-                       arguments: arguments,
-                       finished: "Compiled \(filename)")
-    return object
+    let status =  announceAndRunTask("Compiling \(filename)... ",
+                                     arguments: arguments,
+                                     finished: "Compiled \(filename)")
+    return (status, object)
   }
 
 

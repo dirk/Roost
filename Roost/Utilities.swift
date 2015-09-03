@@ -90,8 +90,8 @@ public func getFileModificationDate(path: String) -> NSDate? {
   return maybeDate as! NSDate?
 }
 
-func announceAndRunTask(announcement: String, #arguments: [String], #finished: String) {
-  func normalAnnouncer(block: () -> (Task)) {
+func announceAndRunTask(announcement: String, #arguments: [String], #finished: String) -> Int {
+  func normalAnnouncer(block: () -> (Task)) -> Int {
     print(announcement)
     stdoutFlush()
 
@@ -102,17 +102,19 @@ func announceAndRunTask(announcement: String, #arguments: [String], #finished: S
       print("\r") // Reset cursor to the beginning of line
       println(finished)
     }
+    return task.exitStatus
   }
-  func verboseAnnouncer(block: () -> (Task)) {
+  func verboseAnnouncer(block: () -> (Task)) -> Int {
     println(announcement)
     println(" ".join(arguments))
 
-    block()
+    let task = block()
+    return task.exitStatus
   }
 
   let announcer = Flags.Verbose ? verboseAnnouncer : normalAnnouncer
 
-  announcer() {
+  return announcer() {
     let task = Task("/usr/bin/env")
     task.arguments = arguments
 
