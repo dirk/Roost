@@ -107,6 +107,8 @@ class Runner {
   }
 
   private func clean() {
+    print("Cleaning..."); stdoutFlush()
+
     let package = roostfile.asPackage()
     let buildDirectory = "\(package.directory)/build"
     let fileManager = NSFileManager()
@@ -121,9 +123,11 @@ class Runner {
       fileManager.removeItemAtPath(path, error: &error)
 
       if let error = error {
+        println() // Newline after the "Cleaning..." message above
         printAndExit("Error removing file: \(error.description)")
       }
     }
+    println(" Done")
   }
 
 

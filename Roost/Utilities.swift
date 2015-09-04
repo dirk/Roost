@@ -135,7 +135,7 @@ func announceAndRunTask(announcement: String, #arguments: [String], #finished: S
   }
 }
 
-private func stdoutFlush() {
+func stdoutFlush() {
   fflush(__stdoutp)
 }
 
