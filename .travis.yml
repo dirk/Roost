@@ -14,4 +14,9 @@ install: "make"
 
 before_script: "bin/roost update"
 
-script: "bin/roost build -B"
+script:
+  - "bin/roost build -B"
+  # Test that the clean command works
+  - "bin/roost clean"
+  # And that it can build after cleaning
+  - "bin/roost build"
