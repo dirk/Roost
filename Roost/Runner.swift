@@ -114,12 +114,17 @@ class Runner {
     let fileManager = NSFileManager()
     let enumerator = fileManager.enumeratorAtPath(buildDirectory)!
 
+    var filesToClean = [String]()
+
     for file in enumerator {
       if !file.hasSuffix(".o") { continue }
 
       let path = "\(buildDirectory)/\(file as! String)"
-      var error: NSError?
+      filesToClean.append(path)
+    }
 
+    for path in filesToClean {
+      var error: NSError?
       fileManager.removeItemAtPath(path, error: &error)
 
       if let error = error {
