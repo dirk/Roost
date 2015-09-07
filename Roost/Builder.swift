@@ -21,19 +21,6 @@ struct CompilationResult {
   let package: Package
 }
 
-class CompileOptions {
-  var sourceFiles = [String]()
-  var includes = [String]()
-  var frameworkSearchPaths = [String]()
-  var customCompilerOptions = [String]()
-
-  // Linker options
-  var rpaths = [String]()
-  var linkerSearchDirectories = [String]()
-  var linkLibraries = [String]()
-  var customLinkerOptions = [String]()
-}
-
 class Builder {
 
   var package: Package
@@ -55,6 +42,7 @@ class Builder {
     binDirectory = "\(package.directory)/bin"
 
     sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
+    compileOptions.sdkPath = sdkPath
   }
 
   private func commonCompilerArguments() -> [String] {
