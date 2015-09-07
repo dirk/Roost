@@ -409,33 +409,17 @@ class Builder {
 // Compilation utilities
 
   func compileSourceToObject(sourceFile: String) -> (Int, String) {
-    var arguments = ["swiftc", "-frontend", "-c"]
-
-    for s in compileOptions.sourceFiles {
-      if s == sourceFile { arguments.append("-primary-file") }
-      arguments.append(s)
+    let otherSourceFiles = compileOptions.sourceFiles.filter {
+      return $0 != sourceFile
     }
-
-    arguments.extend(["-target", "x86_64-apple-darwin14.4.0", "-enable-objc-interop"])
-    arguments.extend(["-sdk", sdkPath])
-
-    for i in compileOptions.includes {
-      arguments.extend(["-I", i])
-    }
-    for f in compileOptions.frameworkSearchPaths {
-      arguments.extend(["-F", f])
-    }
-
-    arguments.extend(compileOptions.customCompilerOptions)
-    arguments.extend(["-color-diagnostics", "-module-name", "main"])
-
-    let filename = (sourceFile as NSString).lastPathComponent
     let object = objectFileForSourceFile(sourceFile)
-    arguments.extend(["-o", object])
 
-    let status =  announceAndRunTask("Compiling \(filename)... ",
-                                     arguments: arguments,
-                                     finished: "Compiled \(filename)")
+    let compileable = CompileableObject(compileOptions: compileOptions,
+                                        primarySourceFile: sourceFile,
+                                        otherSourceFiles: otherSourceFiles,
+                                        targetObjectFile: object)
+
+    let status = compileable.compile()
     return (status, object)
   }
 
