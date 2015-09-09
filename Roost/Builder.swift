@@ -105,6 +105,33 @@ class Builder {
                              package: package)
   }// compileDependency
 
+  private func compileSource(source: String, ifNewerThan: NSDate?) -> CompilationStatus {
+    var didCompile            = false
+    var sourceNewerThanTarget = true
+    let missingObjectFile     = !fileExists(objectFileForSourceFile(source))
+
+    if let targetDate = ifNewerThan, sourceDate = getFileModificationDate(source) {
+      sourceNewerThanTarget = sourceDate.isNewerThan(targetDate)
+    }
+
+    if !missingObjectFile &&
+       !sourceNewerThanTarget &&
+       !Flags.MustRecompile
+    {
+      return .Skipped
+    }
+
+    let (exitStatus, _) = compileSourceToObject(source)
+
+    if exitStatus != 0 {
+      let filename = (source as NSString).lastPathComponent
+      println("Compilation of \(filename) failed with status \(exitStatus)")
+      return .Failed
+    }
+
+    return .Compiled
+  }
+
 
   private func ensureHaveDependency(dependency: Roostfile.Dependency) -> CompilationResult {
     let directory = dependency.inLocalDirectory(vendorDirectory)
@@ -212,46 +239,20 @@ class Builder {
         let binFilePath = "\(binDirectory)/\(package.binFileName)"
         let binFileModificationDate = getFileModificationDate(binFilePath)
 
-        // Default to saying it didn't compile; however default to true if
-        // there weren't any source files.
-        var didCompile = !(compileOptions.sourceFiles.count > 0)
+        let statuses = compileOptions.sourceFiles.map({
+          self.compileSource($0, ifNewerThan: binFileModificationDate)
+        })
 
-        for source in compileOptions.sourceFiles {
-          var needsRecompilation = true
-          let missingObjectFile = !fileExists(objectFileForSourceFile(source))
+        // Stop if any failed or all were skipped.
+        if statuses.filter({ $0 == .Failed }).count > 0   { return .Failed  }
+        if statuses.filter({ $0 != .Skipped }).count == 0 { return .Skipped }
 
-          if let targetDate = binFileModificationDate {
-            needsRecompilation = sourceNeedsRecompilation(source,
-                                                          targetDate: targetDate)
-          }
-          if !missingObjectFile &&
-             !needsRecompilation &&
-             !Flags.MustRecompile
-          {
-            continue
-          }
+        var linkerArguments = buildLinkerArguments()
+        linkerArguments.extend(["-o", binFilePath])
 
-          let (exitStatus, _) = compileSourceToObject(source)
-
-          if exitStatus != 0 {
-            let filename = (source as NSString).lastPathComponent
-            println("Compilation of \(filename) failed with status \(exitStatus)")
-            return .Failed
-          }
-
-          didCompile = true
-        }
-
-        // Link if we compiled objects
-        if didCompile {
-          var linkerArguments = buildLinkerArguments()
-          linkerArguments.extend(["-o", binFilePath])
-
-          announceAndRunTask("Linking \(binFilePath)... ",
-                             arguments: linkerArguments,
-                             finished: "Linked \(roostfile.name) to \(binFilePath)")
-        }
-
+        announceAndRunTask("Linking \(binFilePath)... ",
+                           arguments: linkerArguments,
+                           finished: "Linked \(roostfile.name) to \(binFilePath)")
 
       case .Module:
         let swiftModuleTarget = modulePathForPackage()
