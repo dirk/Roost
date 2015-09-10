@@ -27,7 +27,7 @@ class Builder {
   var rootDirectory: String
   var buildDirectory: String
   var binDirectory: String
-  var compileOptions = CompileOptions()
+  var compileOptions: CompileOptions!
 
   var fileManager: NSFileManager     { get { return NSFileManager.defaultManager() } }
   var roostfile: Roostfile           { get { return package.roostfile } }
@@ -41,8 +41,8 @@ class Builder {
     buildDirectory = "\(package.directory)/build"
     binDirectory = "\(package.directory)/bin"
 
+    compileOptions = CompileOptions(builder: self)
     sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
-    compileOptions.sdkPath = sdkPath
   }
 
   private func commonCompilerArguments() -> [String] {
@@ -108,7 +108,7 @@ class Builder {
   private func compileSource(source: String, ifNewerThan: NSDate?) -> CompilationStatus {
     var didCompile            = false
     var sourceNewerThanTarget = true
-    let missingObjectFile     = !fileExists(objectFileForSourceFile(source))
+    let missingObjectFile     = !fileExists(compileOptions.objectFileForSourceFile(source))
 
     if let targetDate = ifNewerThan, sourceDate = getFileModificationDate(source) {
       sourceNewerThanTarget = sourceDate.isNewerThan(targetDate)
@@ -122,7 +122,7 @@ class Builder {
     }
 
     let otherSourceFiles = compileOptions.sourceFiles.filter({ $0 != source })
-    let object = objectFileForSourceFile(source)
+    let object = compileOptions.objectFileForSourceFile(source)
 
     let compileable = CompileableObject(compileOptions: compileOptions,
                                         primarySourceFile: source,
@@ -332,9 +332,7 @@ class Builder {
     let libraryFilePath = "\(buildDirectory)/lib\(roostfile.name).a"
 
     var libtoolArguments = ["libtool", "-o", libraryFilePath]
-    libtoolArguments.extend(compileOptions.sourceFiles.map({
-      self.objectFileForSourceFile($0)
-    }))
+    libtoolArguments.extend(compileOptions.objectFiles)
 
     announceAndRunTask("Archiving \(libraryFilePath)... ",
                        arguments: libtoolArguments,
@@ -434,18 +432,11 @@ class Builder {
     return false
   }
 
-  func objectFileForSourceFile(path: String) -> String {
-    let filename = (path as NSString).lastPathComponent
-    let hash     = (path.computeMD5() as NSString).substringToIndex(6)
-
-    return "\(buildDirectory)/\(filename)-\(hash).o"
-  }
-
   func buildLinkerArguments() -> [String] {
     var arguments = ["ld"]
 
-    for source in compileOptions.sourceFiles {
-      arguments.append(objectFileForSourceFile(source))
+    for object in compileOptions.objectFiles {
+      arguments.append(object)
     }
     for rpath in compileOptions.rpaths {
       arguments.extend(["-rpath", rpath])

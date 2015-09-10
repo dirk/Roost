@@ -1,17 +1,46 @@
 import Foundation
 
 class CompileOptions {
-  var sdkPath: String!
-  var sourceFiles = [String]()
+  // Set by Builder instance that creates this
+  var builder: Builder
+
   var includes = [String]()
   var frameworkSearchPaths = [String]()
   var customCompilerOptions = [String]()
+  var sourceToObjectMap = [String : String]()
 
   // Linker options
   var rpaths = [String]()
   var linkerSearchDirectories = [String]()
   var linkLibraries = [String]()
   var customLinkerOptions = [String]()
+
+  var sourceFiles: [String] {
+    get {
+      return _sourceFiles
+    }
+    set {
+      _sourceFiles = newValue
+      computeSourceToObjectMap()
+    }
+  }
+  var objectFiles: [String] {
+    get { return sourceToObjectMap.values.array }
+  }
+  var sdkPath: String {
+    get { return builder.sdkPath }
+  }
+  var buildDirectory: String {
+    get { return builder.buildDirectory }
+  }
+
+  // Internal storage for `sourceFiles` computed property.
+  private var _sourceFiles = [String]()
+
+
+  init(builder: Builder) {
+    self.builder = builder
+  }
 
   func argumentsForFrontend(_ extraArguments: [String]? = nil) -> [String] {
     var arguments = ["swiftc", "-frontend", "-c"]
@@ -35,4 +64,33 @@ class CompileOptions {
 
     return arguments
   }
+
+  func objectFileForSourceFile(source: String) -> String {
+    if let object = sourceToObjectMap[source] {
+      return object
+    } else {
+      printAndExit("Object file not found for source file: \(source)")
+      return ""
+    }
+  }
+
+
+  private func computeSourceToObjectMap() {
+    var map = [String : String]()
+
+    for source in sourceFiles {
+      let object = computeObjectFileForSourceFile(source)
+      map[source] = object
+    }
+
+    sourceToObjectMap = map
+  }
+
+  private func computeObjectFileForSourceFile(path: String) -> String {
+    let filename = (path as NSString).lastPathComponent
+    let hash     = (path.computeMD5() as NSString).substringToIndex(6)
+
+    return "\(buildDirectory)/\(filename)-\(hash).o"
+  }
+
 }
