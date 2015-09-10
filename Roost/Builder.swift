@@ -121,7 +121,15 @@ class Builder {
       return .Skipped
     }
 
-    let (exitStatus, _) = compileSourceToObject(source)
+    let otherSourceFiles = compileOptions.sourceFiles.filter({ $0 != source })
+    let object = objectFileForSourceFile(source)
+
+    let compileable = CompileableObject(compileOptions: compileOptions,
+                                        primarySourceFile: source,
+                                        otherSourceFiles: otherSourceFiles,
+                                        targetObjectFile: object)
+
+    let exitStatus = compileable.compile()
 
     if exitStatus != 0 {
       let filename = (source as NSString).lastPathComponent
@@ -256,15 +264,16 @@ class Builder {
 
       case .Module:
         let swiftModuleTarget = modulePathForPackage()
+        let swiftModuleModificationDate = getFileModificationDate(swiftModuleTarget)
 
-        if !modulesCompiled &&
-           !needsRecompilation(package.sourceFiles, swiftModuleTarget) &&
-           !Flags.MustRecompile
-        {
-          return .Skipped
-        }
+        let statuses = compileOptions.sourceFiles.map({
+          self.compileSource($0, ifNewerThan: swiftModuleModificationDate)
+        })
 
-        // Do need to recompile
+        // Stop if any failed or all were skipped.
+        if statuses.filter({ $0 == .Failed }).count > 0   { return .Failed  }
+        if statuses.filter({ $0 != .Skipped }).count == 0 { return .Skipped }
+
         compileStaticLibrary()
         compileSwiftModule()
 
@@ -320,23 +329,15 @@ class Builder {
   }
 
   private func compileStaticLibrary() {
-    var arguments = commonModuleCompilerArguments()
-    arguments.extend(compileOptions.sourceFiles)
-
-    let objectFilePath  = "\(buildDirectory)/tmp-\(roostfile.name).o"
     let libraryFilePath = "\(buildDirectory)/lib\(roostfile.name).a"
-    arguments.extend(["-parse-as-library", "-emit-object", "-whole-module-optimization"])
-    arguments.extend(["-module-name", roostfile.name])
-    arguments.extend(["-o", objectFilePath])
 
-    announceAndRunTask("Compiling \(objectFilePath)... ",
-                       arguments: arguments,
-                       finished: "Compiled \(roostfile.name) object to \(objectFilePath)")
-
-    let archive = ["libtool", "-o", libraryFilePath, objectFilePath]
+    var libtoolArguments = ["libtool", "-o", libraryFilePath]
+    libtoolArguments.extend(compileOptions.sourceFiles.map({
+      self.objectFileForSourceFile($0)
+    }))
 
     announceAndRunTask("Archiving \(libraryFilePath)... ",
-                       arguments: archive,
+                       arguments: libtoolArguments,
                        finished: "Created \(roostfile.name) archive at \(libraryFilePath)")
   }
 
@@ -407,22 +408,6 @@ class Builder {
     return .Compiled
   }
 
-// Compilation utilities
-
-  func compileSourceToObject(sourceFile: String) -> (Int, String) {
-    let otherSourceFiles = compileOptions.sourceFiles.filter {
-      return $0 != sourceFile
-    }
-    let object = objectFileForSourceFile(sourceFile)
-
-    let compileable = CompileableObject(compileOptions: compileOptions,
-                                        primarySourceFile: sourceFile,
-                                        otherSourceFiles: otherSourceFiles,
-                                        targetObjectFile: object)
-
-    let status = compileable.compile()
-    return (status, object)
-  }
 
 
 // Utility functions
