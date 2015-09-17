@@ -254,7 +254,7 @@ public func pack(value: MessagePackValue) -> NSData {
     case .String(let string):
         let utf8 = string.utf8
         let prefix: [UInt8]
-        switch UInt32(count(utf8)) {
+        switch UInt32(utf8.count) {
         case let count where count <= 0x19:
             prefix = [0xa0 | UInt8(count)]
         case let count where count <= 0xff:
@@ -305,7 +305,7 @@ public func pack(value: MessagePackValue) -> NSData {
         let mutableData = NSMutableData()
         mutableData.appendData(makeData(prefix))
 
-        return reduce(array.map(pack), mutableData) { (mutableData, data) in
+        return array.map(pack).reduce(mutableData) { (mutableData: NSMutableData, data) in
             mutableData.appendData(data)
             return mutableData
         }
@@ -327,7 +327,7 @@ public func pack(value: MessagePackValue) -> NSData {
         let mutableData = NSMutableData()
         mutableData.appendData(makeData(prefix))
 
-        return reduce(flatten(dict).map(pack), mutableData) { (mutableData, data) in
+        return flatten(dict).map(pack).reduce(mutableData) { (mutableData: NSMutableData, data) in
             mutableData.appendData(data)
             return mutableData
         }
@@ -657,7 +657,7 @@ extension MessagePackValue {
     }
 }
 
-extension MessagePackValue: Printable {
+extension MessagePackValue: CustomStringConvertible {
     public var description: Swift.String {
         switch self {
         case .Nil:
@@ -686,7 +686,7 @@ extension MessagePackValue: Printable {
     }
 }
 
-extension MessagePackValue: DebugPrintable {
+extension MessagePackValue: CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         switch self {
         case .Nil:

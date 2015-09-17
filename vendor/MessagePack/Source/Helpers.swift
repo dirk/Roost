@@ -21,7 +21,7 @@ func makeData(array: [UInt8]) -> NSData {
 
     :returns: A `UInt64`, or `nil` if the generator runs out of elements.
 */
-func joinUInt64<G: GeneratorType where G.Element == UInt8>(inout generator: G, size: Int) -> UInt64? {
+func joinUInt64<G: GeneratorType where G.Element == UInt8>(inout generator: G, _ size: Int) -> UInt64? {
     var int: UInt64 = 0
     for _ in 0..<size {
         if let byte = generator.next() {
@@ -42,7 +42,7 @@ func joinUInt64<G: GeneratorType where G.Element == UInt8>(inout generator: G, s
 
     :returns: A `String`, or `nil` if the generator runs out of elements.
 */
-func joinString<G: GeneratorType where G.Element == UInt8>(inout generator: G, length: Int) -> String? {
+func joinString<G: GeneratorType where G.Element == UInt8>(inout generator: G, _ length: Int) -> String? {
     let ptrCount = length + 1 // +1 for \0-termination
     let ptr = UnsafeMutablePointer<CChar>.alloc(ptrCount)
 
@@ -70,7 +70,7 @@ func joinString<G: GeneratorType where G.Element == UInt8>(inout generator: G, l
 
     :returns: An `Array`, or `nil` if the generator runs out of elements.
 */
-func joinData<G: GeneratorType where G.Element == UInt8>(inout generator: G, length: Int) -> NSData? {
+func joinData<G: GeneratorType where G.Element == UInt8>(inout generator: G, _ length: Int) -> NSData? {
     var array = [UInt8]()
     array.reserveCapacity(length)
 
@@ -93,7 +93,7 @@ func joinData<G: GeneratorType where G.Element == UInt8>(inout generator: G, len
 
     :returns: An `Array`, or `nil` if the generator runs out of elements.
 */
-func joinArray<G: GeneratorType where G.Element == UInt8>(inout generator: G, length: Int) -> [MessagePackValue]? {
+func joinArray<G: GeneratorType where G.Element == UInt8>(inout generator: G, _ length: Int) -> [MessagePackValue]? {
     var array = [MessagePackValue]()
     array.reserveCapacity(length)
 
@@ -116,7 +116,7 @@ func joinArray<G: GeneratorType where G.Element == UInt8>(inout generator: G, le
 
     :returns: A `Dictionary`, or `nil` if the generator runs out of elements.
 */
-func joinMap<G: GeneratorType where G.Element == UInt8>(inout generator: G, length: Int) -> [MessagePackValue : MessagePackValue]? {
+func joinMap<G: GeneratorType where G.Element == UInt8>(inout generator: G, _ length: Int) -> [MessagePackValue : MessagePackValue]? {
     let doubleLength = length * 2
     if let array = joinArray(&generator, length * 2) {
         var dict = [MessagePackValue : MessagePackValue]()
@@ -144,8 +144,8 @@ func joinMap<G: GeneratorType where G.Element == UInt8>(inout generator: G, leng
 
     :returns: An byte array representation of `value`.
 */
-func splitInt(value: UInt64, #parts: Int) -> [UInt8] {
-    return map(stride(from: 8 * (parts - 1), through: 0, by: -8)) { (shift: Int) -> UInt8 in
+func splitInt(value: UInt64, parts: Int) -> [UInt8] {
+    return (8 * (parts - 1)).stride(through: 0, by: -8).map() { (shift: Int) -> UInt8 in
         return UInt8(truncatingBitPattern: value >> UInt64(shift))
     }
 }
@@ -209,5 +209,5 @@ func packIntNeg(value: Int64) -> NSData {
     :returns: An array of keys and values.
 */
 func flatten<T>(dict: [T : T]) -> [T] {
-    return map(dict) { [$0.0, $0.1] }.reduce([], combine: +)
+    return dict.map() { [$0.0, $0.1] }.reduce([], combine: +)
 }
