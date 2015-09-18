@@ -28,10 +28,10 @@ class CompileableObject: Compileable {
     // Arguments to be injected right after the '-c' flag in the arguments
     // to swiftc.
     var sourcesArguments = otherSourceFiles
-    sourcesArguments.extend(["-primary-file", primarySourceFile])
+    sourcesArguments.appendContentsOf(["-primary-file", primarySourceFile])
 
     var arguments = compileOptions.argumentsForFrontend(sourcesArguments)
-    arguments.extend(["-o", targetObjectFile])
+    arguments.appendContentsOf(["-o", targetObjectFile])
 
     let status   = announceAndRunTask(startedMessage,
                                       arguments: arguments,

@@ -6,8 +6,8 @@ extension Roostfile {
     var sources: [String] = []
 
     func inspect() {
-      println("  name \(name)")
-      println("  sources \(sources)")
+      print("  name \(name)")
+      print("  sources \(sources)")
     }
   }
 }

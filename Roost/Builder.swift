@@ -53,13 +53,13 @@ class Builder {
     var arguments = ["swiftc", "-sdk", sdkPath]
 
     for rpath in compileOptions.rpaths {
-      arguments.extend(["-Xlinker", "-rpath", "-Xlinker", rpath])
+      arguments.appendContentsOf(["-Xlinker", "-rpath", "-Xlinker", rpath])
     }
     for framework in compileOptions.frameworkSearchPaths {
-      arguments.extend(["-F", framework])
+      arguments.appendContentsOf(["-F", framework])
     }
     for directory in compileOptions.linkerSearchDirectories {
-      arguments.extend(["-L", directory])
+      arguments.appendContentsOf(["-L", directory])
     }
     for library in compileOptions.linkLibraries {
       arguments.append("-l\(library)")
@@ -69,7 +69,7 @@ class Builder {
       arguments.append(argument)
     }
     for argument in compileOptions.customLinkerOptions {
-      arguments.extend(["-Xlinker", argument])
+      arguments.appendContentsOf(["-Xlinker", argument])
     }
 
     return arguments
@@ -106,7 +106,6 @@ class Builder {
   }// compileDependency
 
   private func compileSource(source: String, ifNewerThan: NSDate?) -> CompilationStatus {
-    var didCompile            = false
     var sourceNewerThanTarget = true
     let missingObjectFile     = !fileExists(compileOptions.objectFileForSourceFile(source))
 
@@ -133,7 +132,7 @@ class Builder {
 
     if exitStatus != 0 {
       let filename = (source as NSString).lastPathComponent
-      println("Compilation of \(filename) failed with status \(exitStatus)")
+      print("Compilation of \(filename) failed with status \(exitStatus)")
       return .Failed
     }
 
@@ -171,8 +170,6 @@ class Builder {
 
       modulesCompiled = modulesCompiled || compiled
     }
-
-    var arguments = commonCompilerArguments()
 
     // Compile all of the sources
     compileOptions.sourceFiles = Array<String>(package.sourceFiles)
@@ -224,19 +221,19 @@ class Builder {
       compileOptions.linkLibraries.append(name)
 
       if let options = hasCustomOptions(roostfile.compilerOptions, forPackage: package) {
-        compileOptions.customCompilerOptions.extend(options)
+        compileOptions.customCompilerOptions.appendContentsOf(options)
       }
       if let options = hasCustomOptions(roostfile.linkerOptions, forPackage: package) {
-        compileOptions.customLinkerOptions.extend(options)
+        compileOptions.customLinkerOptions.appendContentsOf(options)
       }
     }
 
     // Append compiler options if we have any
     if let options = hasCustomOptions(package.compilerOptions, forPackage: package) {
-      compileOptions.customCompilerOptions.extend(options)
+      compileOptions.customCompilerOptions.appendContentsOf(options)
     }
     if let options = hasCustomOptions(package.linkerOptions, forPackage: package) {
-      compileOptions.customLinkerOptions.extend(options)
+      compileOptions.customLinkerOptions.appendContentsOf(options)
     }
 
     switch package.targetType {
@@ -256,7 +253,7 @@ class Builder {
         if statuses.filter({ $0 != .Skipped }).count == 0 { return .Skipped }
 
         var linkerArguments = buildLinkerArguments()
-        linkerArguments.extend(["-o", binFilePath])
+        linkerArguments.appendContentsOf(["-o", binFilePath])
 
         announceAndRunTask("Linking \(binFilePath)... ",
                            arguments: linkerArguments,
@@ -292,10 +289,10 @@ class Builder {
       let task = Task("/bin/sh")
       let script = "cd \"\(rootDirectory)\"; \(command)"
 
-      println("Running \(roostfile.name) precompile command #\(index)")
+      print("Running \(roostfile.name) precompile command #\(index)")
 
       if Flags.Verbose {
-        println(script)
+        print(script)
       }
 
       task.arguments = ["-c", script]
@@ -316,12 +313,12 @@ class Builder {
 
   private func compileSwiftModule() {
     var arguments = commonModuleCompilerArguments()
-    arguments.extend(compileOptions.sourceFiles)
+    arguments.appendContentsOf(compileOptions.sourceFiles)
 
     let modulePath = modulePathForPackage()
 
-    arguments.extend(["-emit-module-path", modulePath])
-    arguments.extend(["-module-name", roostfile.name])
+    arguments.appendContentsOf(["-emit-module-path", modulePath])
+    arguments.appendContentsOf(["-module-name", roostfile.name])
 
     announceAndRunTask("Compiling \(modulePath)",
                        arguments: arguments,
@@ -332,7 +329,7 @@ class Builder {
     let libraryFilePath = "\(buildDirectory)/lib\(roostfile.name).a"
 
     var libtoolArguments = ["libtool", "-o", libraryFilePath]
-    libtoolArguments.extend(compileOptions.objectFiles)
+    libtoolArguments.appendContentsOf(compileOptions.objectFiles)
 
     announceAndRunTask("Archiving \(libraryFilePath)... ",
                        arguments: libtoolArguments,
@@ -354,8 +351,8 @@ class Builder {
     let path = swiftModuleFilePathForModule(module)
     var arguments = baseArguments
 
-    arguments.extend(["-emit-module-path", path])
-    arguments.extend(["-module-name", module.name])
+    arguments.appendContentsOf(["-emit-module-path", path])
+    arguments.appendContentsOf(["-module-name", module.name])
 
     announceAndRunTask("Compiling \(path)... ",
                        arguments: arguments,
@@ -367,9 +364,9 @@ class Builder {
     let libraryFilePath = libraryFilePathForModule(module)
     var libraryArguments = baseArguments
 
-    libraryArguments.extend(["-parse-as-library", "-emit-object", "-whole-module-optimization"])
-    libraryArguments.extend(["-module-name", module.name])
-    libraryArguments.extend(["-o", temporaryObjectPath])
+    libraryArguments.appendContentsOf(["-parse-as-library", "-emit-object", "-whole-module-optimization"])
+    libraryArguments.appendContentsOf(["-module-name", module.name])
+    libraryArguments.appendContentsOf(["-o", temporaryObjectPath])
 
     announceAndRunTask("Compiling \(temporaryObjectPath)... ",
                        arguments: libraryArguments,
@@ -379,8 +376,7 @@ class Builder {
                        finished: "Archived library for module \(module.name) to \(libraryFilePath)")
 
     // Remove the old temporary file
-    var error: NSError?
-    NSFileManager.defaultManager().removeItemAtPath(temporaryObjectPath, error: &error)
+    _ = try? NSFileManager.defaultManager().removeItemAtPath(temporaryObjectPath)
   }
 
   func compileModule(module: Package.Module) -> CompilationStatus {
@@ -395,7 +391,7 @@ class Builder {
     }
 
     var arguments = commonModuleCompilerArguments()
-    arguments.extend(module.sourceFiles)
+    arguments.appendContentsOf(module.sourceFiles)
 
     // Compile the Swift module
     compileSwiftModuleForModule(arguments, module)
@@ -439,20 +435,20 @@ class Builder {
       arguments.append(object)
     }
     for rpath in compileOptions.rpaths {
-      arguments.extend(["-rpath", rpath])
+      arguments.appendContentsOf(["-rpath", rpath])
     }
     for framework in compileOptions.frameworkSearchPaths {
-      arguments.extend(["-F", framework])
+      arguments.appendContentsOf(["-F", framework])
     }
     for directory in compileOptions.linkerSearchDirectories {
-      arguments.extend(["-L", directory])
+      arguments.appendContentsOf(["-L", directory])
     }
     for library in compileOptions.linkLibraries {
       arguments.append("-l\(library)")
     }
 
-    arguments.extend(compileOptions.customLinkerOptions)
-    arguments.extend([
+    arguments.appendContentsOf(compileOptions.customLinkerOptions)
+    arguments.appendContentsOf([
       "-arch", "x86_64",
       "-syslibroot", sdkPath, "-lSystem",
       "-L",     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
@@ -473,14 +469,12 @@ class Builder {
   }
 
   private func ensureDirectoryExists(path: String) {
-    var isDirectory: ObjCBool = false
+    do {
+      try fileManager.createDirectoryAtPath(path,
+                                            withIntermediateDirectories: true,
+                                            attributes: nil)
 
-    let created = fileManager.createDirectoryAtPath(path,
-                                                    withIntermediateDirectories: true,
-                                                    attributes: nil,
-                                                    error: nil)
-
-    if !created {
+    } catch {
       printAndExit("Failed to create directory: \(path)")
     }
   }// ensureDirectoryExists
@@ -488,10 +482,9 @@ class Builder {
   private func hasCustomOptions(rawOptions: String, forPackage aPackage: Package) -> [String]? {
     let options = rawOptions.stringByTrimmingCharactersInSet(WhitespaceCharacterSet)
 
-    if !isEmpty(options) {
+    if !options.characters.isEmpty {
       return (options as NSString)
         .componentsSeparatedByCharactersInSet(WhitespaceCharacterSet)
-        .map { $0 as! String }
         .map { self.formatCompilerOption($0, forPackage: aPackage) }
     } else {
       return [String]()

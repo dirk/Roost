@@ -97,7 +97,7 @@ class Package {
     let (directories, files, nonMatching) = filterSources(sources)
 
     if nonMatching.count > 0 {
-      let items = ", ".join(nonMatching)
+      let items = nonMatching.joinWithSeparator(", ")
       printAndExit("Failed to parse as file or directory: \(items)")
     }
 
@@ -115,7 +115,7 @@ class Package {
       let baseDirectory = roostfile.directory as NSString
       let directory = baseDirectory.stringByAppendingPathComponent(sourceDirectory)
 
-      sources.extend(scanDirectoryForSources(directory))
+      sources.appendContentsOf(scanDirectoryForSources(directory))
     }
 
     return sources
@@ -125,18 +125,19 @@ class Package {
     let manager = NSFileManager.defaultManager()
 
     var dates = [NSDate]()
-    var error: NSError?
 
     for path in paths {
-      let attributes = manager.attributesOfItemAtPath(path, error: &error)
+      var attributes: [String : AnyObject]
 
-      if attributes == nil {
-        println("Failed to lookup attributes for file: \(path)")
-        println(error)
+      do {
+        attributes = try manager.attributesOfItemAtPath(path)
+      } catch {
+        print("Failed to lookup attributes for file: \(path)")
+        print(error)
         exit(1)
       }
 
-      let maybeDate: AnyObject? = attributes![NSFileModificationDate]
+      let maybeDate: AnyObject? = attributes[NSFileModificationDate]
 
       if maybeDate == nil {
         printAndExit("Modification date not found for file: \(path)")
@@ -146,7 +147,7 @@ class Package {
       dates.append(date)
     }
 
-    let datesAscending = dates.sorted({ (a: NSDate, b: NSDate) -> Bool in
+    let datesAscending = dates.sort({ (a: NSDate, b: NSDate) -> Bool in
       return !a.isNewerThan(b)
       // return a.compare(b) == NSComparisonResult.OrderedAscending ? true : false
     })
@@ -163,9 +164,9 @@ class Package {
       for file in enumerator {
         if !file.hasSuffix(".swift") { continue }
 
-        let filePath = directory.stringByAppendingPathComponent(file as! String)
+        let fileURL = NSURL(fileURLWithPath: directory).URLByAppendingPathComponent(file as! String)
 
-        files.append(filePath)
+        files.append(fileURL.path!)
       }
 
       return files

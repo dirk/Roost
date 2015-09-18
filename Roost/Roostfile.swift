@@ -6,7 +6,7 @@ private let commentToken = "#"
 let WhitespaceCharacterSet = NSCharacterSet.whitespaceCharacterSet()
 let WhitespaceAndNewlineCharacterSet = NSCharacterSet.whitespaceAndNewlineCharacterSet()
 
-enum TargetType: Printable {
+enum TargetType: CustomStringConvertible {
   case Unknown
   case Executable
   case Framework
@@ -126,7 +126,7 @@ class Roostfile {
         return s.string!
       }
     } else {
-      println("Cannot parse sources")
+      print("Cannot parse sources")
     }
   }
 
@@ -137,13 +137,13 @@ class Roostfile {
   }
 
   func parseModule(yaml: Yaml) {
-    var module = Roostfile.Module()
+    let module = Roostfile.Module()
     var errored = false
 
     if let name = yaml["name"].string {
       module.name = name
     } else {
-      println("Unable to parse module name")
+      print("Unable to parse module name")
       errored = true
     }
 
@@ -154,13 +154,13 @@ class Roostfile {
         if let source = y.string {
           parsedSources.append(source)
         } else {
-          println("Unable to parse module source")
+          print("Unable to parse module source")
         }
       }
 
       module.sources = parsedSources
     } else {
-      println("Unable to parse module sources")
+      print("Unable to parse module sources")
       errored = true
     }
 
@@ -183,13 +183,13 @@ class Roostfile {
     let typeString = yaml.string
 
     if typeString == nil {
-      println("Invalid target type: expected string")
+      print("Invalid target type: expected string")
     }
 
     if let type = TargetType.fromString(typeString!) {
       targetType = type
     } else {
-      println("Invalid target type '\(typeString)'")
+      print("Invalid target type '\(typeString)'")
     }
   }
 
@@ -197,7 +197,7 @@ class Roostfile {
     let deps = yaml.array
 
     if deps == nil {
-      println("Dependencies must be an array"); exit(1)
+      print("Dependencies must be an array"); exit(1)
     }
 
     for dep in deps! {
@@ -209,7 +209,7 @@ class Roostfile {
     if let github = yaml["github"].string {
       parseGithubDependency(github, yaml: yaml)
     } else {
-      println("Invalid dependency format"); exit(1)
+      print("Invalid dependency format"); exit(1)
     }
   }
 
@@ -224,7 +224,7 @@ class Roostfile {
   }
 
   func parseTestTarget(yaml: Yaml) -> ParsingError? {
-    var testTarget = TestTarget()
+    let testTarget = TestTarget()
 
     if let hasSources = yaml["sources"].array {
       testTarget.sources = hasSources.map { (s) in
@@ -271,37 +271,37 @@ class Roostfile {
   }
 
   func inspect() {
-    println("name: \(name)")
-    println("sources: \(sources)")
-    println("target_type: \(targetType.description.lowercaseString)")
+    print("name: \(name)")
+    print("sources: \(sources)")
+    print("target_type: \(targetType.description.lowercaseString)")
 
     if dependencies.count > 0 {
-      println("dependencies:")
+      print("dependencies:")
 
       for dependency in dependencies {
         if let github = dependency.github {
-          println("  - github: \(github)")
+          print("  - github: \(github)")
         } else {
-          println("  - unknown")
+          print("  - unknown")
         }
       }
     }
 
     if modules.count > 0 {
-      println("modules:")
+      print("modules:")
 
-      for (key, module) in modules {
-        println("  - name: \(module.name)")
-        println("    sources: \(module.sources)")
+      for (_, module) in modules {
+        print("  - name: \(module.name)")
+        print("    sources: \(module.sources)")
       }
     }
 
     if frameworkSearchPaths.count > 0 {
-      println("framework_search_paths: \(frameworkSearchPaths)")
+      print("framework_search_paths: \(frameworkSearchPaths)")
     }
 
     // for (name, module) in modules {
-    //   println("module  :")
+    //   print("module  :")
     //   module.inspect()
     // }
   }

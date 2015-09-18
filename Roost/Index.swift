@@ -6,13 +6,10 @@ private let LINE_FEED: UInt8 = 10
 class Index {
 
   static var HeaderRegex: NSRegularExpression! {
-    var error: NSError?
-
-    if let headerRegex = NSRegularExpression(pattern: "Roost Index Version (\\d+)",
-                                             options: .allZeros,
-                                             error: &error) {
-      return headerRegex
-    } else {
+    do {
+      return try NSRegularExpression(pattern: "Roost Index Version (\\d+)",
+                                     options: NSRegularExpressionOptions())
+    } catch {
       printAndExit("Unable to compiled regular expression: \(error)")
       return nil
     }
@@ -72,7 +69,7 @@ class Index {
   }
 
   class func read(path: String) {
-    var (headerData, payloadData) = readHeaderAndPayload(path)
+    let (headerData, payloadData) = readHeaderAndPayload(path)
     var version: Int
 
     if let header = NSString(data: headerData, encoding: NSUTF8StringEncoding) {
@@ -85,13 +82,14 @@ class Index {
 
     if let value = MessagePack.unpack(payloadData) {
       if let dictionary = value.dictionaryValue {
-        let index = Index(dictionary: dictionary)
+        let _ = Index(dictionary: dictionary)
+        // TODO: Use the index!
 
-        println("Done")
+        print("Done")
         return
       }
     }
-    println("Error reading MessagePack data")
+    print("Error reading MessagePack data")
   }
 
   class func readHeaderAndPayload(path: String) -> (NSData, NSData) {
@@ -106,7 +104,7 @@ class Index {
     var bytes = Array<UInt8>(count: data.length, repeatedValue: 0)
     data.getBytes(&bytes, length: data.length)
 
-    let separatorIndex: Int! = find(bytes, LINE_FEED)!
+    let separatorIndex: Int! = bytes.indexOf(LINE_FEED)!
 
     if separatorIndex == nil {
       printAndExit("Unable to find separator \"\\n\" in Index")
@@ -115,8 +113,8 @@ class Index {
     var headerBytes  = Array<UInt8>(bytes[0..<separatorIndex])
     var payloadBytes = Array<UInt8>(bytes[(separatorIndex + 1)..<data.length])
 
-    var headerData  = NSData(bytes: &headerBytes, length: separatorIndex)
-    var payloadData = NSData(bytes: &payloadBytes,
+    let headerData  = NSData(bytes: &headerBytes, length: separatorIndex)
+    let payloadData = NSData(bytes: &payloadBytes,
                              length: (data.length - separatorIndex) - 1)
 
     return (headerData, payloadData)
@@ -126,8 +124,8 @@ class Index {
     var version: Int
 
     if let matches = HeaderRegex.firstMatchInString(header,
-                                                    options: .allZeros,
-                                                    range: NSMakeRange(0, count(header))) {
+                                                    options: NSMatchingOptions(),
+                                                    range: NSMakeRange(0, header.characters.count)) {
       let versionRange = matches.rangeAtIndex(1)
       let versionString = (header as NSString).substringWithRange(versionRange)
 

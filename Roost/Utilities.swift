@@ -45,25 +45,25 @@ public func fileExists(path: String) -> Bool {
 public func createDirectoryAtPath(path: String) -> Bool {
   let fileManager = NSFileManager.defaultManager()
 
-  let created = fileManager.createDirectoryAtPath(path,
-                                                  withIntermediateDirectories: true,
-                                                  attributes: nil,
-                                                  error: nil)
-
-  return created
+  do {
+    try fileManager.createDirectoryAtPath(path,
+                                          withIntermediateDirectories: true,
+                                          attributes: nil)
+    return true
+  } catch {
+    return false
+  }
 }
 
 public func readFile(path: String) -> String {
-  let url = NSURL(fileURLWithPath: path)!
-  var error: NSError?
+  let url = NSURL(fileURLWithPath: path)
 
-  let contents = NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding, error: &error)
-
-  if contents == nil {
-    let errorString = error!.localizedDescription
-    printAndExit("Error reading file: \(errorString)")
+  do {
+    return try NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding) as String
+  } catch {
+    printAndExit("Error reading file: \(error)")
+    return ""
   }
-  return contents! as String
 }
 
 private let stderr = NSFileHandle.fileHandleWithStandardError()
@@ -80,33 +80,32 @@ public func printAndExit(string: String, status: Int32 = 1) {
 }
 
 public func getFileModificationDate(path: String) -> NSDate? {
-  var error: NSError?
   let manager = NSFileManager.defaultManager()
 
-  let attributes = manager.attributesOfItemAtPath(path, error: &error)
-  if attributes == nil { return nil }
-
-  let maybeDate: AnyObject? = attributes![NSFileModificationDate]
-  return maybeDate as! NSDate?
+  if let attributes = try? manager.attributesOfItemAtPath(path) {
+    return attributes[NSFileModificationDate] as! NSDate?
+  } else {
+    return nil
+  }
 }
 
-func announceAndRunTask(announcement: String, #arguments: [String], #finished: String) -> Int {
+func announceAndRunTask(announcement: String, arguments: [String], finished: String) -> Int {
   func normalAnnouncer(block: () -> (Task)) -> Int {
-    print(announcement)
+    print(announcement, terminator: "")
     stdoutFlush()
 
     let task = block()
 
     if !task.hasAnyOutput() {
-      print("\u{001B}[2K") // Clear the whole line
-      print("\r") // Reset cursor to the beginning of line
-      println(finished)
+      print("\u{001B}[2K", terminator: "") // Clear the whole line
+      print("\r", terminator: "") // Reset cursor to the beginning of line
+      print(finished)
     }
     return task.exitStatus
   }
   func verboseAnnouncer(block: () -> (Task)) -> Int {
-    println(announcement)
-    println(" ".join(arguments))
+    print(announcement)
+    print(arguments.joinWithSeparator(" "))
 
     let task = block()
     return task.exitStatus
@@ -121,7 +120,7 @@ func announceAndRunTask(announcement: String, #arguments: [String], #finished: S
     task.launchAndWait()
 
     if task.hasAnyOutput() {
-      println()
+      print("")
 
       if let output = task.outputData {
         NSFileHandle.fileHandleWithStandardOutput().writeData(output)
@@ -197,7 +196,7 @@ extension String {
 
     CC_MD5(cString!, cStringLength, result)
 
-    var hash = NSMutableString()
+    let hash = NSMutableString()
     for i in 0..<digestLength {
       hash.appendFormat("%02x", result[i])
     }

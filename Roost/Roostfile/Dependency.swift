@@ -76,7 +76,7 @@ extension Roostfile {
         "cd \(directory)",
         "git pull -q origin master",
       ]
-      let commands = " && ".join(commandsArray)
+      let commands = commandsArray.joinWithSeparator(" && ")
 
       announceAndRunTask("Pulling dependency \(shortName)... ",
                          arguments: ["sh", "-c", commands],

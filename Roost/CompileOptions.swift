@@ -24,15 +24,9 @@ class CompileOptions {
       computeSourceToObjectMap()
     }
   }
-  var objectFiles: [String] {
-    get { return sourceToObjectMap.values.array }
-  }
-  var sdkPath: String {
-    get { return builder.sdkPath }
-  }
-  var buildDirectory: String {
-    get { return builder.buildDirectory }
-  }
+  var objectFiles: [String]  { return Array(sourceToObjectMap.values) }
+  var sdkPath: String        { return builder.sdkPath }
+  var buildDirectory: String { return builder.buildDirectory }
 
   // Internal storage for `sourceFiles` computed property.
   private var _sourceFiles = [String]()
@@ -42,25 +36,25 @@ class CompileOptions {
     self.builder = builder
   }
 
-  func argumentsForFrontend(_ extraArguments: [String]? = nil) -> [String] {
+  func argumentsForFrontend(extraArguments: [String]? = nil) -> [String] {
     var arguments = ["swiftc", "-frontend", "-c"]
 
     if let extraArguments = extraArguments {
-      arguments.extend(extraArguments)
+      arguments.appendContentsOf(extraArguments)
     }
 
-    arguments.extend(["-target", "x86_64-apple-darwin14.4.0", "-enable-objc-interop"])
-    arguments.extend(["-sdk", sdkPath])
+    arguments.appendContentsOf(["-target", "x86_64-apple-darwin14.4.0", "-enable-objc-interop"])
+    arguments.appendContentsOf(["-sdk", sdkPath])
 
     for i in includes {
-      arguments.extend(["-I", i])
+      arguments.appendContentsOf(["-I", i])
     }
     for f in frameworkSearchPaths {
-      arguments.extend(["-F", f])
+      arguments.appendContentsOf(["-F", f])
     }
 
-    arguments.extend(customCompilerOptions)
-    arguments.extend(["-color-diagnostics", "-module-name", "main"])
+    arguments.appendContentsOf(customCompilerOptions)
+    arguments.appendContentsOf(["-color-diagnostics", "-module-name", "main"])
 
     return arguments
   }

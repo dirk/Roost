@@ -93,11 +93,10 @@ class Runner {
     let mainObject = "\(builder.buildDirectory)/main.swift.o"
 
     if fileExists(mainObject) {
-      var error: NSError?
-      NSFileManager.defaultManager().removeItemAtPath(mainObject, error: &error)
-
-      if error != nil {
-        printAndExit("Unable to remove entrace object file: \(error!.description)")
+      do {
+        try NSFileManager.defaultManager().removeItemAtPath(mainObject)
+      } catch {
+        printAndExit("Unable to remove entrace object file: \(error)")
       }
     }
 
@@ -107,7 +106,7 @@ class Runner {
   }
 
   private func clean() {
-    print("Cleaning..."); stdoutFlush()
+    print("Cleaning...", terminator: ""); stdoutFlush()
 
     let package = roostfile.asPackage()
     let buildDirectory = "\(package.directory)/build"
@@ -124,25 +123,24 @@ class Runner {
     }
 
     for path in filesToClean {
-      var error: NSError?
-      fileManager.removeItemAtPath(path, error: &error)
-
-      if let error = error {
-        println() // Newline after the "Cleaning..." message above
-        printAndExit("Error removing file: \(error.description)")
+      do {
+        try fileManager.removeItemAtPath(path)
+      } catch {
+        print("") // Newline after the "Cleaning..." message above
+        printAndExit("Error removing file: \(error)")
       }
     }
-    println(" Done")
+    print(" Done")
   }
 
 
 // Option parsing
 
   private func optionParsingError(cli: CommandLine, _ error: String) {
-    println(error)
-    println("")
+    print(error)
+    print("")
     cli.printUsage()
-    println("")
+    print("")
     exit(1)
   }
 
@@ -156,10 +154,10 @@ class Runner {
 
     cli.addOptions(commandOptions)
 
-    let (success, error) = cli.parse(strict: true)
-
-    if !success {
-      optionParsingError(cli, error!)
+    do {
+      try cli.parse()
+    } catch {
+      optionParsingError(cli, String(error))
     }
   }
 
@@ -230,14 +228,14 @@ class Runner {
   }
 
   private func printUsageAndCommands() {
-    println("Usage: roost [command] [options]\n")
-    println("Available commands:\n")
-    println("  build    Build project")
-    println("  inspect  Show project details")
-    println("  list     List all packages in the index")
-    println("  update   Update (or fetch if not present) project dependencies")
-    println("  clean    Remove intermediate build files")
-    println("")
+    print("Usage: roost [command] [options]\n")
+    print("Available commands:\n")
+    print("  build    Build project")
+    print("  inspect  Show project details")
+    print("  list     List all packages in the index")
+    print("  update   Update (or fetch if not present) project dependencies")
+    print("  clean    Remove intermediate build files")
+    print("")
   }
 
 }

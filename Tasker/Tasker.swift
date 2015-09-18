@@ -15,8 +15,8 @@ public class Task {
 
   public let task: NSTask
 
-  public var arguments: [AnyObject] {
-    get { return task.arguments }
+  public var arguments: [String] {
+    get { return (task.arguments != nil ? task.arguments! : []) }
     set { task.arguments = newValue }
   }
 
@@ -75,6 +75,6 @@ public class Task {
     let outputTrimmed = outputString.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
     let errorTrimmed  = errorString.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
 
-    return (count(outputTrimmed) > 0 || count(errorTrimmed) > 0)
+    return (outputTrimmed.characters.count > 0 || errorTrimmed.characters.count > 0)
   }
 }
