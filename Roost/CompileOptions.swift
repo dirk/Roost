@@ -15,23 +15,14 @@ class CompileOptions {
   var linkLibraries = [String]()
   var customLinkerOptions = [String]()
 
-  var sourceFiles: [String] {
-    get {
-      return _sourceFiles
-    }
-    set {
-      _sourceFiles = newValue
+  var sourceFiles = [String]() {
+    didSet {
       computeSourceToObjectMap()
     }
   }
-  var objectFiles: [String]   { return Array(sourceToObjectMap.values) }
-  var sdkPath: String         { return builder.sdkPath }
-  var sdkPlatformPath: String { return builder.sdkPlatformPath }
-  var buildDirectory: String  { return builder.buildDirectory }
 
-  // Internal storage for `sourceFiles` computed property.
-  private var _sourceFiles = [String]()
-
+  var objectFiles: [String]  { return Array(sourceToObjectMap.values) }
+  var buildDirectory: String { return builder.buildDirectory }
 
   init(builder: Builder) {
     self.builder = builder
@@ -45,8 +36,8 @@ class CompileOptions {
     }
 
     arguments.appendContentsOf(["-target", "x86_64-apple-darwin14.4.0", "-enable-objc-interop"])
-    arguments.appendContentsOf(["-sdk", sdkPath])
-    arguments.appendContentsOf(["-F", "\(sdkPlatformPath)/Developer/Library/Frameworks"])
+    arguments.appendContentsOf(["-sdk", getSDKPath()])
+    arguments.appendContentsOf(["-F", "\(getSDKPlatformPath())/Developer/Library/Frameworks"])
 
     for i in includes {
       arguments.appendContentsOf(["-I", i])

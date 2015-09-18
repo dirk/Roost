@@ -146,12 +146,14 @@ public func getSDKPath() -> String {
   if let path = SDKPath { return path }
 
   SDKPath = getOutputOfShellCommand("xcrun --show-sdk-path")
+    .stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
   return SDKPath
 }
 public func getSDKPlatformPath() -> String {
   if let path = SDKPlatformPath { return path }
 
   SDKPlatformPath = getOutputOfShellCommand("xcrun --sdk macosx --show-sdk-platform-path")
+    .stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
   return SDKPlatformPath
 }
 

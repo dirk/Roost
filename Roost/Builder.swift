@@ -29,12 +29,10 @@ class Builder {
   var binDirectory: String
   var compileOptions: CompileOptions!
 
-  var fileManager: NSFileManager     { get { return NSFileManager.defaultManager() } }
-  var roostfile: Roostfile           { get { return package.roostfile } }
-  var vendorDirectory: String        { get { return package.vendorDirectory } }
-  var frameworkSearchPaths: [String] { get { return roostfile.frameworkSearchPaths } }
-  var sdkPath: String = ""
-  var sdkPlatformPath: String = ""
+  var fileManager: NSFileManager     { return NSFileManager.defaultManager() }
+  var roostfile: Roostfile           { return package.roostfile }
+  var vendorDirectory: String        { return package.vendorDirectory }
+  var frameworkSearchPaths: [String] { return roostfile.frameworkSearchPaths }
 
   init(_ aPackage: Package) {
     package = aPackage
@@ -43,19 +41,17 @@ class Builder {
     binDirectory = "\(package.directory)/bin"
 
     compileOptions  = CompileOptions(builder: self)
-    sdkPath         = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
-    sdkPlatformPath = getSDKPlatformPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
   }
 
   private func commonCompilerArguments() -> [String] {
-    return ["swiftc", "-sdk", sdkPath]
+    return ["swiftc", "-sdk", getSDKPath()]
   }
 
   private func commonModuleCompilerArguments() -> [String] {
     var arguments = [
       "swiftc",
-      "-sdk", sdkPath,
-      "-F", "\(sdkPlatformPath)/Developer/Library/Frameworks",
+      "-sdk", getSDKPath(),
+      "-F", "\(getSDKPlatformPath())/Developer/Library/Frameworks",
     ]
 
     for rpath in compileOptions.rpaths {
@@ -456,7 +452,7 @@ class Builder {
     arguments.appendContentsOf(compileOptions.customLinkerOptions)
     arguments.appendContentsOf([
       "-arch", "x86_64",
-      "-syslibroot", sdkPath, "-lSystem",
+      "-syslibroot", getSDKPath(), "-lSystem",
       "-L",     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
       "-rpath", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
       "-macosx_version_min", "10.10.0",
