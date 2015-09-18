@@ -34,6 +34,7 @@ class Builder {
   var vendorDirectory: String        { get { return package.vendorDirectory } }
   var frameworkSearchPaths: [String] { get { return roostfile.frameworkSearchPaths } }
   var sdkPath: String = ""
+  var sdkPlatformPath: String = ""
 
   init(_ aPackage: Package) {
     package = aPackage
@@ -41,8 +42,9 @@ class Builder {
     buildDirectory = "\(package.directory)/build"
     binDirectory = "\(package.directory)/bin"
 
-    compileOptions = CompileOptions(builder: self)
-    sdkPath = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
+    compileOptions  = CompileOptions(builder: self)
+    sdkPath         = getSDKPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
+    sdkPlatformPath = getSDKPlatformPath().stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
   }
 
   private func commonCompilerArguments() -> [String] {
@@ -50,7 +52,11 @@ class Builder {
   }
 
   private func commonModuleCompilerArguments() -> [String] {
-    var arguments = ["swiftc", "-sdk", sdkPath]
+    var arguments = [
+      "swiftc",
+      "-sdk", sdkPath,
+      "-F", "\(sdkPlatformPath)/Developer/Library/Frameworks",
+    ]
 
     for rpath in compileOptions.rpaths {
       arguments.appendContentsOf(["-Xlinker", "-rpath", "-Xlinker", rpath])

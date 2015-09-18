@@ -24,9 +24,10 @@ class CompileOptions {
       computeSourceToObjectMap()
     }
   }
-  var objectFiles: [String]  { return Array(sourceToObjectMap.values) }
-  var sdkPath: String        { return builder.sdkPath }
-  var buildDirectory: String { return builder.buildDirectory }
+  var objectFiles: [String]   { return Array(sourceToObjectMap.values) }
+  var sdkPath: String         { return builder.sdkPath }
+  var sdkPlatformPath: String { return builder.sdkPlatformPath }
+  var buildDirectory: String  { return builder.buildDirectory }
 
   // Internal storage for `sourceFiles` computed property.
   private var _sourceFiles = [String]()
@@ -45,6 +46,7 @@ class CompileOptions {
 
     arguments.appendContentsOf(["-target", "x86_64-apple-darwin14.4.0", "-enable-objc-interop"])
     arguments.appendContentsOf(["-sdk", sdkPath])
+    arguments.appendContentsOf(["-F", "\(sdkPlatformPath)/Developer/Library/Frameworks"])
 
     for i in includes {
       arguments.appendContentsOf(["-I", i])

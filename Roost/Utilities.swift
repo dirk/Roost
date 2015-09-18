@@ -140,37 +140,28 @@ func stdoutFlush() {
 
 
 private var SDKPath: String!
+private var SDKPlatformPath: String!
 
 public func getSDKPath() -> String {
-  if let path = SDKPath {
-    return path
-  }
+  if let path = SDKPath { return path }
 
-  // TODO: Implement generalized NSTask abstraction struct
-  let outputPipe = NSPipe()
-  let task = NSTask()
-  task.launchPath = "/bin/sh"
-  task.arguments = ["-c", "xcrun --show-sdk-path"]
-  task.standardOutput = outputPipe
+  SDKPath = getOutputOfShellCommand("xcrun --show-sdk-path")
+  return SDKPath
+}
+public func getSDKPlatformPath() -> String {
+  if let path = SDKPlatformPath { return path }
 
-  task.launch()
-
-  let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
-  let path = NSString(data: outputData, encoding: NSUTF8StringEncoding) as! String
-
-  // Memoize and return
-  SDKPath = path
-  return path
+  SDKPlatformPath = getOutputOfShellCommand("xcrun --sdk macosx --show-sdk-platform-path")
+  return SDKPlatformPath
 }
 
-public func getSDKPlatformPath() -> String {
+private func getOutputOfShellCommand(command: String) -> String {
   let task = Task("/bin/sh")
-  task.arguments = ["-c", "xcrun --sdk macosx --show-sdk-platform-path"]
-
+  task.arguments = ["-c", command]
   task.launchAndWait()
 
   if !task.hasAnyOutput() {
-    printAndExit("Failed to look up SDK platform path")
+    printAndExit("Failed to get output for shell command: \(command)")
   }
 
   return task.outputString
