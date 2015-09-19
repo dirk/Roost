@@ -139,22 +139,20 @@ func stdoutFlush() {
 }
 
 
-private var SDKPath: String!
-private var SDKPlatformPath: String!
+private var SDKPath = Memoized.Unevaluated {
+  getOutputOfShellCommand("xcrun --show-sdk-path")
+    .stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
+}
+private var SDKPlatformPath = Memoized.Unevaluated {
+  getOutputOfShellCommand("xcrun --sdk macosx --show-sdk-platform-path")
+    .stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
+}
 
 public func getSDKPath() -> String {
-  if let path = SDKPath { return path }
-
-  SDKPath = getOutputOfShellCommand("xcrun --show-sdk-path")
-    .stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
-  return SDKPath
+  return SDKPath.value
 }
 public func getSDKPlatformPath() -> String {
-  if let path = SDKPlatformPath { return path }
-
-  SDKPlatformPath = getOutputOfShellCommand("xcrun --sdk macosx --show-sdk-platform-path")
-    .stringByTrimmingCharactersInSet(WhitespaceAndNewlineCharacterSet)
-  return SDKPlatformPath
+  return SDKPlatformPath.value
 }
 
 private func getOutputOfShellCommand(command: String) -> String {
@@ -201,4 +199,26 @@ extension String {
 
 func md5File(path: String) -> String {
   return readFile(path).computeMD5()
+}
+
+
+// Easy memoization of values.
+//   (see: https://gist.github.com/JadenGeller/1be3c6bd82901899ece3)
+//   var x = Memoized.Unevaluated { ... }
+//   let y = x.value
+enum Memoized<T> {
+    case Evaluated(T)
+    case Unevaluated(() -> T)
+
+    var value: T {
+        mutating get {
+            switch self {
+            case .Evaluated(let x):
+                return x
+            case .Unevaluated(let f):
+                self = .Evaluated(f())
+                return value
+            }
+        }
+    }
 }
