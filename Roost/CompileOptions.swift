@@ -15,17 +15,18 @@ class CompileOptions {
   var linkLibraries = [String]()
   var customLinkerOptions = [String]()
 
+  var buildDirectory: String
   var sourceFiles = [String]() {
     didSet {
       computeSourceToObjectMap()
     }
   }
 
-  var objectFiles: [String]  { return Array(sourceToObjectMap.values) }
-  var buildDirectory: String { return builder.buildDirectory }
+  var objectFiles: [String] { return Array(sourceToObjectMap.values) }
 
-  init(builder: Builder) {
-    self.builder = builder
+  init(builder: Builder, buildDirectory: String) {
+    self.builder        = builder
+    self.buildDirectory = buildDirectory
   }
 
   func argumentsForFrontend(extraArguments: [String]? = nil) -> [String] {

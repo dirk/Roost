@@ -40,7 +40,8 @@ class Builder {
     buildDirectory = "\(package.directory)/build"
     binDirectory = "\(package.directory)/bin"
 
-    compileOptions  = CompileOptions(builder: self)
+    compileOptions  = CompileOptions(builder: self,
+                                     buildDirectory: buildDirectory)
   }
 
   private func commonCompilerArguments() -> [String] {
