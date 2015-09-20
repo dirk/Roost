@@ -30,7 +30,7 @@ class CompileOptions {
   }
 
   func argumentsForFrontend(extraArguments: [String]? = nil) -> [String] {
-    var arguments = ["swiftc", "-frontend", "-c"]
+    var arguments = ["swift", "-frontend", "-c"]
 
     if let extraArguments = extraArguments {
       arguments.appendContentsOf(extraArguments)
@@ -38,7 +38,7 @@ class CompileOptions {
 
     arguments.appendContentsOf(["-target", "x86_64-apple-darwin14.4.0", "-enable-objc-interop"])
     arguments.appendContentsOf(["-sdk", getSDKPath()])
-    arguments.appendContentsOf(["-F", "\(getSDKPlatformPath())/Developer/Library/Frameworks"])
+    // arguments.appendContentsOf(["-F", "\(getSDKPlatformPath())/Developer/Library/Frameworks"])
 
     for i in includes {
       arguments.appendContentsOf(["-I", i])
@@ -48,7 +48,9 @@ class CompileOptions {
     }
 
     arguments.appendContentsOf(customCompilerOptions)
-    arguments.appendContentsOf(["-color-diagnostics", "-module-name", "main"])
+
+    let moduleName = builder.roostfile.name.lowercaseString
+    arguments.appendContentsOf(["-color-diagnostics", "-module-name", moduleName])
 
     return arguments
   }
