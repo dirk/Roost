@@ -1,6 +1,11 @@
 import Foundation
 
+/**
+  Manages options to pass to the Swift compiler frontend and generates
+  argument arrays to be passed to the compiler.
+*/
 class CompileOptions {
+
   // Set by Builder instance that creates this
   var builder: Builder
 

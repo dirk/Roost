@@ -14,26 +14,20 @@ extension Roostfile {
   // Computed attributes
 
     var shortName: String {
-      get {
-        if let github = self.github {
-          return github.componentsSeparatedByString("/").last!
-        } else {
-          fatalError("Can't determine shortname for dependency")
-        }
+      if let github = self.github {
+        return github.componentsSeparatedByString("/").last!
+      } else {
+        fatalError("Can't determine shortname for dependency")
       }
     }
 
-    var moduleName: String {
-      get {
-        return shortName
-      }
-    }
+    var moduleName: String { return shortName }
 
 
   // Initializers
 
-    init(github gh: String) {
-      github = gh
+    init(github: String) {
+      self.github = github
     }
 
     func sourceURL() -> String {
