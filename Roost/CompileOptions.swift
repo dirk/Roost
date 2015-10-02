@@ -38,7 +38,7 @@ class CompileOptions {
 
     arguments.appendContentsOf(["-target", "x86_64-apple-darwin14.4.0", "-enable-objc-interop"])
     arguments.appendContentsOf(["-sdk", getSDKPath()])
-    // arguments.appendContentsOf(["-F", "\(getSDKPlatformPath())/Developer/Library/Frameworks"])
+    arguments.appendContentsOf(["-F", "\(getSDKPlatformPath())/Developer/Library/Frameworks"])
 
     for i in includes {
       arguments.appendContentsOf(["-I", i])
@@ -49,7 +49,7 @@ class CompileOptions {
 
     arguments.appendContentsOf(customCompilerOptions)
 
-    let moduleName = builder.roostfile.name.lowercaseString
+    let moduleName = builder.roostfile.name
     arguments.appendContentsOf(["-color-diagnostics", "-module-name", moduleName])
 
     return arguments
@@ -63,7 +63,6 @@ class CompileOptions {
       return ""
     }
   }
-
 
   private func computeSourceToObjectMap() {
     var map = [String : String]()

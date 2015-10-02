@@ -4,14 +4,14 @@ import Nimble
 class RoostfileSpec: Spec {
   var definition: String {
     get {
-      return "\n".join([
+      return [
         "name: Test",
         "version: 0.1.2",
         "target_type: executable",
         "sources:",
         "  - TestFile.swift",
         "  - TestDirectory/",
-      ])
+      ].joinWithSeparator("\n")
     }
   }
 
