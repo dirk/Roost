@@ -406,7 +406,6 @@ class Builder {
   }
 
 
-
 // Utility functions
 
   func needsRecompilation(sources: [String], _ target: String) -> Bool {
