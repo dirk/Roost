@@ -66,13 +66,13 @@ class Roostfile {
       "modules":                self.parseModules,
       "framework_search_paths": self.parseFrameworkSearchPaths,
       "target_type":            self.parseTargetType,
-      "dependencies":           self.parseDependencies,
       "precompile_commands":    self.parsePrecompileCommands,
     ]
     let failableActionMap = [
-      "test_target":            self.parseTestTarget,
       "compiler_options":       self.parseCompilerOptions,
+      "dependencies":           self.parseDependencies,
       "linker_options":         self.parseLinkerOptions,
+      "test_target":            self.parseTestTarget,
     ]
 
     if let dictionary = yaml.value!.dictionary {
@@ -193,23 +193,28 @@ class Roostfile {
     }
   }
 
-  func parseDependencies(yaml: Yaml) {
+  func parseDependencies(yaml: Yaml) -> ParsingError? {
     let deps = yaml.array
 
     if deps == nil {
-      print("Dependencies must be an array"); exit(1)
+      return ParsingError(message: "Dependencies must be an array")
     }
 
     for dep in deps! {
-      parseDependency(dep)
+      if let error = parseDependency(dep) {
+        return error
+      }
     }
+
+    return nil
   }
 
-  func parseDependency(yaml: Yaml) {
+  func parseDependency(yaml: Yaml) -> ParsingError? {
     if let github = yaml["github"].string {
       parseGithubDependency(github, yaml: yaml)
+      return nil
     } else {
-      print("Invalid dependency format"); exit(1)
+      return ParsingError(message: "Invalid dependency format")
     }
   }
 

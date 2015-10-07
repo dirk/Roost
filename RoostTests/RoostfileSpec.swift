@@ -60,6 +60,12 @@ class RoostfileSpec: Spec {
         expect(error).toNot(beNil())
         expect(error!.message).to(contain("bad_property"))
       }
+
+      it("should not parse bad dependencies") {
+        let error = r.parseFromString("dependencies: a string")
+        expect(error).toNot(beNil())
+        expect(error!.message).to(contain("must be an array"))
+      }
     }
   }
 }
