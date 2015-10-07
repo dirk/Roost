@@ -62,7 +62,6 @@ class Roostfile {
     let unfailableActionMap = [
       "name":                   self.parseName,
       "version":                self.parseVersion,
-      "sources":                self.parseSources,
       "modules":                self.parseModules,
       "framework_search_paths": self.parseFrameworkSearchPaths,
       "target_type":            self.parseTargetType,
@@ -72,6 +71,7 @@ class Roostfile {
       "compiler_options":       self.parseCompilerOptions,
       "dependencies":           self.parseDependencies,
       "linker_options":         self.parseLinkerOptions,
+      "sources":                self.parseSources,
       "test_target":            self.parseTestTarget,
     ]
 
@@ -120,13 +120,14 @@ class Roostfile {
     return
   }
 
-  func parseSources(yaml: Yaml) {
+  func parseSources(yaml: Yaml) -> ParsingError? {
     if let sourcesYamls = yaml.array {
       sources = sourcesYamls.map { (s) in
         return s.string!
       }
+      return nil
     } else {
-      print("Cannot parse sources")
+      return ParsingError(message: "Cannot parse sources")
     }
   }
 
