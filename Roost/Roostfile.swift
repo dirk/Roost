@@ -59,31 +59,26 @@ class Roostfile {
     }
 
     // Map names to processors
-    let unfailableActionMap = [
-      "name":                   self.parseName,
-      "version":                self.parseVersion,
-      "modules":                self.parseModules,
-      "framework_search_paths": self.parseFrameworkSearchPaths,
-      "target_type":            self.parseTargetType,
-      "precompile_commands":    self.parsePrecompileCommands,
-    ]
-    let failableActionMap = [
+    let actionMap = [
       "compiler_options":       self.parseCompilerOptions,
       "dependencies":           self.parseDependencies,
+      "framework_search_paths": self.parseFrameworkSearchPaths,
       "linker_options":         self.parseLinkerOptions,
+      "modules":                self.parseModules,
+      "name":                   self.parseName,
+      "precompile_commands":    self.parsePrecompileCommands,
       "sources":                self.parseSources,
+      "target_type":            self.parseTargetType,
       "test_target":            self.parseTestTarget,
+      "version":                self.parseVersion,
     ]
 
     if let dictionary = yaml.value!.dictionary {
       for (keyYaml, valueYaml) in dictionary {
         if let key = keyYaml.string {
-          if let action = failableActionMap[key] {
+          if let action = actionMap[key] {
             let error = action(valueYaml)
             if error != nil { return error }
-
-          } else if let action = unfailableActionMap[key] {
-            action(valueYaml)
 
           } else {
             return ParsingError(message: "Can't parse key '\(key)'")
@@ -109,15 +104,20 @@ class Roostfile {
     return Package(testSources: testTarget!.sources, forRoostfile: self)
   }
 
-  func parseName(yaml: Yaml) {
-    name = yaml.string!
+  func parseName(yaml: Yaml) -> ParsingError? {
+    if let name = yaml.string {
+      self.name = name
+      return nil
+    } else {
+      return ParsingError(message: "Invalid name; expected string")
+    }
   }
 
   /**
     Skip no-op.
   */
-  func parseVersion(yaml: Yaml) {
-    return
+  func parseVersion(yaml: Yaml) -> ParsingError? {
+    return nil
   }
 
   func parseSources(yaml: Yaml) -> ParsingError? {
@@ -131,21 +131,23 @@ class Roostfile {
     }
   }
 
-  func parseModules(yaml: Yaml) {
+  func parseModules(yaml: Yaml) -> ParsingError? {
     for moduleYaml in yaml.array! {
-      parseModule(moduleYaml)
+      if let error = parseModule(moduleYaml) {
+        return error
+      }
     }
+
+    return nil
   }
 
-  func parseModule(yaml: Yaml) {
+  func parseModule(yaml: Yaml) -> ParsingError? {
     let module = Roostfile.Module()
-    var errored = false
 
     if let name = yaml["name"].string {
       module.name = name
     } else {
-      print("Unable to parse module name")
-      errored = true
+      return ParsingError(message: "Unable to parse module name")
     }
 
     if let sources = yaml["sources"].array {
@@ -155,43 +157,72 @@ class Roostfile {
         if let source = y.string {
           parsedSources.append(source)
         } else {
-          print("Unable to parse module source")
+          return ParsingError(message: "Unable to parse module source")
         }
       }
 
       module.sources = parsedSources
     } else {
-      print("Unable to parse module sources")
-      errored = true
+      return ParsingError(message: "Unable to parse module sources; expected array")
     }
-
-    if errored { return }
 
     modules[module.name] = module
+    return nil
   }
 
-  func parseFrameworkSearchPaths(yaml: Yaml) {
-    frameworkSearchPaths = yaml.array!.map { (y: Yaml) in
-      return y.string!
+  func parseFrameworkSearchPaths(yaml: Yaml) -> ParsingError? {
+    if let searchPaths = yaml.array {
+      var frameworkSearchPaths = [String]()
+
+      for path in searchPaths {
+        if let path = path.string {
+          frameworkSearchPaths.append(path)
+        } else {
+          return ParsingError(message: "Invalid framework search path; expected string")
+        }
+      }
+
+      self.frameworkSearchPaths = frameworkSearchPaths
+      return nil
+
+    } else {
+      return ParsingError(message: "Invalid framework search paths; expected array")
     }
   }
 
-  func parsePrecompileCommands(yaml: Yaml) {
-    precompileCommands = yaml.array!.map { return $0.string! }
+  func parsePrecompileCommands(yaml: Yaml) -> ParsingError? {
+    var commands = [String]()
+
+    if let precompileCommands = yaml.array {
+      for commandYaml in precompileCommands {
+        if let command = commandYaml.string {
+          commands.append(command)
+        } else {
+          return ParsingError(message: "Invalid precompile command; expected string")
+        }
+      }
+    } else {
+      return ParsingError(message: "Invalid precompile commands; expected array")
+    }
+
+    self.precompileCommands = commands
+    return nil
   }
 
-  func parseTargetType(yaml: Yaml) {
+  func parseTargetType(yaml: Yaml) -> ParsingError? {
     let typeString = yaml.string
 
     if typeString == nil {
-      print("Invalid target type: expected string")
+      return ParsingError(message: "Invalid target type; expected string")
     }
 
     if let type = TargetType.fromString(typeString!) {
       targetType = type
     } else {
-      print("Invalid target type '\(typeString)'")
+      return ParsingError(message: "Invalid target type '\(typeString)'")
     }
+
+    return nil
   }
 
   func parseDependencies(yaml: Yaml) -> ParsingError? {
