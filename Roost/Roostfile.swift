@@ -121,14 +121,14 @@ class Roostfile {
   }
 
   func parseSources(yaml: Yaml) -> ParsingError? {
-    if let sourcesYamls = yaml.array {
-      sources = sourcesYamls.map { (s) in
-        return s.string!
-      }
-      return nil
-    } else {
+    guard let sourcesYaml = yaml.array else {
       return ParsingError(message: "Cannot parse sources")
     }
+
+    sources = sourcesYaml.map { (s) in
+      return s.string!
+    }
+    return nil
   }
 
   func parseModules(yaml: Yaml) -> ParsingError? {
@@ -171,38 +171,37 @@ class Roostfile {
   }
 
   func parseFrameworkSearchPaths(yaml: Yaml) -> ParsingError? {
-    if let searchPaths = yaml.array {
-      var frameworkSearchPaths = [String]()
-
-      for path in searchPaths {
-        if let path = path.string {
-          frameworkSearchPaths.append(path)
-        } else {
-          return ParsingError(message: "Invalid framework search path; expected string")
-        }
-      }
-
-      self.frameworkSearchPaths = frameworkSearchPaths
-      return nil
-
-    } else {
+    guard let searchPaths = yaml.array else {
       return ParsingError(message: "Invalid framework search paths; expected array")
     }
+
+    var frameworkSearchPaths = [String]()
+
+    for path in searchPaths {
+      if let path = path.string {
+        frameworkSearchPaths.append(path)
+      } else {
+        return ParsingError(message: "Invalid framework search path; expected string")
+      }
+    }
+
+    self.frameworkSearchPaths = frameworkSearchPaths
+    return nil
   }
 
   func parsePrecompileCommands(yaml: Yaml) -> ParsingError? {
+    guard let precompileCommands = yaml.array else {
+      return ParsingError(message: "Invalid precompile commands; expected array")
+    }
+
     var commands = [String]()
 
-    if let precompileCommands = yaml.array {
-      for commandYaml in precompileCommands {
-        if let command = commandYaml.string {
-          commands.append(command)
-        } else {
-          return ParsingError(message: "Invalid precompile command; expected string")
-        }
+    for commandYaml in precompileCommands {
+      if let command = commandYaml.string {
+        commands.append(command)
+      } else {
+        return ParsingError(message: "Invalid precompile command; expected string")
       }
-    } else {
-      return ParsingError(message: "Invalid precompile commands; expected array")
     }
 
     self.precompileCommands = commands
@@ -210,29 +209,24 @@ class Roostfile {
   }
 
   func parseTargetType(yaml: Yaml) -> ParsingError? {
-    let typeString = yaml.string
-
-    if typeString == nil {
+    guard let typeString = yaml.string else {
       return ParsingError(message: "Invalid target type; expected string")
     }
 
-    if let type = TargetType.fromString(typeString!) {
-      targetType = type
-    } else {
+    guard let type = TargetType.fromString(typeString) else {
       return ParsingError(message: "Invalid target type '\(typeString)'")
     }
 
+    targetType = type
     return nil
   }
 
   func parseDependencies(yaml: Yaml) -> ParsingError? {
-    let deps = yaml.array
-
-    if deps == nil {
+    guard let deps = yaml.array else {
       return ParsingError(message: "Dependencies must be an array")
     }
 
-    for dep in deps! {
+    for dep in deps {
       if let error = parseDependency(dep) {
         return error
       }
@@ -263,13 +257,19 @@ class Roostfile {
   func parseTestTarget(yaml: Yaml) -> ParsingError? {
     let testTarget = TestTarget()
 
-    if let hasSources = yaml["sources"].array {
-      testTarget.sources = hasSources.map { (s) in
-        return s.string!
-      }
-    } else {
+    guard let sources = yaml["sources"].array else {
       return ParsingError(message: "Missing `sources` array in test target")
     }
+
+    var testTargetSources = [String]()
+    for s in sources {
+      if let s = s.string {
+        testTargetSources.append(s)
+      } else {
+        return ParsingError(message: "Invalid test target source; expected string")
+      }
+    }
+    testTarget.sources = testTargetSources
 
     if let options = yaml["compiler_options"].string {
       testCompilerOptions = options
@@ -283,22 +283,20 @@ class Roostfile {
   }
 
   func parseCompilerOptions(yaml: Yaml) -> ParsingError? {
-    let options = yaml.string
-
-    if options == nil {
+    guard let options = yaml.string else {
       return ParsingError(message: "Invalid (non-string) compiler options")
     }
 
-    self.compilerOptions = options!
+    self.compilerOptions = options
     return nil
   }
   func parseLinkerOptions(yaml: Yaml) -> ParsingError? {
-    if let options = yaml.string {
-      self.linkerOptions = options
-      return nil
-    } else {
+    guard let options = yaml.string else {
       return ParsingError(message: "Invalid (non-string) compiler options")
     }
+
+    self.linkerOptions = options
+    return nil
   }
 
 
