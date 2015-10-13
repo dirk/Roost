@@ -68,27 +68,25 @@ class Index {
     return path
   }
 
-  class func read(path: String) {
+  class func read(path: String) -> Index! {
     let (headerData, payloadData) = readHeaderAndPayload(path)
     var version: Int
 
     guard let header = NSString(data: headerData, encoding: NSUTF8StringEncoding) else {
-      return printAndExit("Unable to read Index header data") }
+      printAndExit("Unable to read Index header data"); return nil }
 
     version = parseAndCheckHeader(header as String)
 
-    print("Loading Index version \(version)... ")
+    print("Loading Index version \(version) ... ", terminator: "")
 
     guard let value = MessagePack.unpack(payloadData) else {
-      return printAndExit("Error unpacking Index") }
+      printAndExit("Error unpacking Index"); return nil }
 
     guard let dictionary = value.dictionaryValue else {
-      return printAndExit("Error reading Index; expected dictionary") }
-
-    let _ = Index(dictionary: dictionary)
-    // TODO: Use the index!
+      printAndExit("Error reading Index; expected dictionary"); return nil }
 
     print("Done")
+    return Index(dictionary: dictionary)
   }
 
   class func readHeaderAndPayload(path: String) -> (NSData!, NSData!) {

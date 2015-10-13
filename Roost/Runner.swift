@@ -66,8 +66,14 @@ class Runner {
 
   private func list() {
     let path = Index.findIndexFile()
+    let index = Index.read(path)
 
-    Index.read(path)
+    print("")
+
+    for (_, package) in index.packages {
+      let version = package.version
+      print("\(package.name) (\(version))")
+    }
   }
 
   private func test() {
