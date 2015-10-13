@@ -73,25 +73,19 @@ class Roostfile {
       "version":                self.parseVersion,
     ]
 
-    if let dictionary = yaml.value!.dictionary {
-      for (keyYaml, valueYaml) in dictionary {
-        if let key = keyYaml.string {
-          if let action = actionMap[key] {
-            let error = action(valueYaml)
-            if error != nil { return error }
+    guard let dictionary = yaml.value!.dictionary else {
+      return ParsingError(message: "Can't parse document; expected dictionary") }
 
-          } else {
-            return ParsingError(message: "Can't parse key '\(key)'")
-          }
-          continue
-        } else {
-          return ParsingError(message: "Can't parse key")
-        }
-      }// for
+    for (keyYaml, valueYaml) in dictionary {
+      guard let key = keyYaml.string else {
+        return ParsingError(message: "Can't parse key; expected string") }
 
-    } else {
-      return ParsingError(message: "Can't parse document; expected dictionary")
-    }
+      guard let action = actionMap[key] else {
+        return ParsingError(message: "Can't parse key '\(key)'") }
+
+      let error = action(valueYaml)
+      if error != nil { return error }
+    }// for
 
     return nil
   }// parseFromString
@@ -105,12 +99,11 @@ class Roostfile {
   }
 
   func parseName(yaml: Yaml) -> ParsingError? {
-    if let name = yaml.string {
-      self.name = name
-      return nil
-    } else {
-      return ParsingError(message: "Invalid name; expected string")
-    }
+    guard let name = yaml.string else {
+      return ParsingError(message: "Invalid name; expected string") }
+
+    self.name = name
+    return nil
   }
 
   /**
@@ -122,12 +115,18 @@ class Roostfile {
 
   func parseSources(yaml: Yaml) -> ParsingError? {
     guard let sourcesYaml = yaml.array else {
-      return ParsingError(message: "Cannot parse sources")
+      return ParsingError(message: "Cannot parse sources") }
+
+    var sources = [String]()
+
+    for maybeSource in sourcesYaml {
+      guard let source = maybeSource.string else {
+        return ParsingError(message: "Can't parse source; expected string") }
+
+      sources.append(source)
     }
 
-    sources = sourcesYaml.map { (s) in
-      return s.string!
-    }
+    self.sources = sources
     return nil
   }
 

@@ -72,34 +72,28 @@ class Index {
     let (headerData, payloadData) = readHeaderAndPayload(path)
     var version: Int
 
-    if let header = NSString(data: headerData, encoding: NSUTF8StringEncoding) {
-      version = parseAndCheckHeader(header as String)
-    } else {
-      return printAndExit("Unable to read Index header data")
-    }
+    guard let header = NSString(data: headerData, encoding: NSUTF8StringEncoding) else {
+      return printAndExit("Unable to read Index header data") }
+
+    version = parseAndCheckHeader(header as String)
 
     print("Loading Index version \(version)... ")
 
-    if let value = MessagePack.unpack(payloadData) {
-      if let dictionary = value.dictionaryValue {
-        let _ = Index(dictionary: dictionary)
-        // TODO: Use the index!
+    guard let value = MessagePack.unpack(payloadData) else {
+      return printAndExit("Error unpacking Index") }
 
-        print("Done")
-        return
-      }
-    }
-    print("Error reading MessagePack data")
+    guard let dictionary = value.dictionaryValue else {
+      return printAndExit("Error reading Index; expected dictionary") }
+
+    let _ = Index(dictionary: dictionary)
+    // TODO: Use the index!
+
+    print("Done")
   }
 
-  class func readHeaderAndPayload(path: String) -> (NSData, NSData) {
-    var data: NSData = NSData()
-
-    if let foundData = NSData(contentsOfFile: path) {
-      data = foundData
-    } else {
-      printAndExit("Unable to read Index file: \(path)")
-    }
+  class func readHeaderAndPayload(path: String) -> (NSData!, NSData!) {
+    guard let data = NSData(contentsOfFile: path) else {
+      printAndExit("Unable to read Index file: \(path)"); return (nil, nil) }
 
     var bytes = Array<UInt8>(count: data.length, repeatedValue: 0)
     data.getBytes(&bytes, length: data.length)
@@ -123,16 +117,17 @@ class Index {
   class func parseAndCheckHeader(header: String) -> Int {
     var version: Int
 
-    if let matches = HeaderRegex.firstMatchInString(header,
-                                                    options: NSMatchingOptions(),
-                                                    range: NSMakeRange(0, header.characters.count)) {
-      let versionRange = matches.rangeAtIndex(1)
-      let versionString = (header as NSString).substringWithRange(versionRange)
-
-      version = (versionString as NSString).integerValue
-    } else {
+    guard let matches = HeaderRegex.firstMatchInString(header,
+                                                       options: NSMatchingOptions(),
+                                                       range: NSMakeRange(0, header.characters.count))
+    else {
       printAndExit("Unable to parse Index header"); return 0
     }
+
+    let versionRange = matches.rangeAtIndex(1)
+    let versionString = (header as NSString).substringWithRange(versionRange)
+
+    version = (versionString as NSString).integerValue
 
     if version != 1 {
       printAndExit("Unable to parse Index version \(version)"); return 0
