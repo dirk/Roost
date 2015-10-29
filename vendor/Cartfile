@@ -1,4 +1,4 @@
-github "behrang/yaml.swift" == 1.2.2
+github "behrang/yaml.swift" "14851b6"
 github "jatoben/CommandLine" == 2.0.0
 github "Quick/Nimble" "v2.0.0-rc.3"
 

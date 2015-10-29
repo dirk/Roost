@@ -455,7 +455,7 @@ class Builder {
       "-syslibroot", getSDKPath(), "-lSystem",
       "-L",     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
       "-rpath", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
-      "-macosx_version_min", "10.10.0",
+      "-macosx_version_min", "10.11.0",
       "-no_objc_category_merging",
     ])
 
