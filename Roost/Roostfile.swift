@@ -12,22 +12,22 @@ enum TargetType: CustomStringConvertible {
   case Framework
   case Module
 
+  init?(string: String) {
+    switch string.lowercaseString {
+      case "unknown":    self = .Unknown
+      case "executable": self = .Executable
+      case "framework":  self = .Framework
+      case "module":     self = .Module
+      default:           return nil
+    }
+  }
+
   var description: String {
     switch self {
       case .Unknown:    return "Unknown"
       case .Executable: return "Executable"
       case .Framework:  return "Framework"
       case .Module:     return "Module"
-    }
-  }
-
-  static func fromString(string: String) -> TargetType? {
-    switch string.lowercaseString {
-      case "unknown":    return .Unknown
-      case "executable": return .Executable
-      case "framework":  return .Framework
-      case "module":     return .Module
-      default:           return nil
     }
   }
 }
@@ -58,7 +58,7 @@ class Roostfile {
       return ParsingError(message: error)
     }
 
-    // Map names to processors
+    // Map names to parsing functions
     let actionMap = [
       "compiler_options":       self.parseCompilerOptions,
       "dependencies":           self.parseDependencies,
@@ -83,8 +83,9 @@ class Roostfile {
       guard let action = actionMap[key] else {
         return ParsingError(message: "Can't parse key '\(key)'") }
 
-      let error = action(valueYaml)
-      if error != nil { return error }
+      if let error = action(valueYaml) {
+        return error
+      }
     }// for
 
     return nil
@@ -212,7 +213,7 @@ class Roostfile {
       return ParsingError(message: "Invalid target type; expected string")
     }
 
-    guard let type = TargetType.fromString(typeString) else {
+    guard let type = TargetType(string: typeString) else {
       return ParsingError(message: "Invalid target type '\(typeString)'")
     }
 
