@@ -238,21 +238,40 @@ class Roostfile {
 
   func parseDependency(yaml: Yaml) -> ParsingError? {
     if let github = yaml["github"].string {
-      parseGithubDependency(github, yaml: yaml)
-      return nil
+      return parseGithubDependency(github, yaml: yaml)
     } else {
       return ParsingError(message: "Invalid dependency format")
     }
   }
 
-  func parseGithubDependency(github: String, yaml: Yaml) {
+  /**
+    Check if a property is present on the input YAML. If it is, that is it's
+    not Yaml.Null, then call the callback function with the value of
+    the property.
+  */
+  func parsePropertyIfPresent(yaml: Yaml, _ property: String, callback: (Yaml) throws -> Void) rethrows {
+    let value = yaml[Yaml.String(property)]
+
+    if value != Yaml.Null {
+      try callback(value)
+    }
+  }
+
+  func parseGithubDependency(github: String, yaml: Yaml) -> ParsingError? {
     let dep = Dependency(github: github)
 
-    if let onlyTest = yaml["only_test"].bool {
-      dep.onlyTest = onlyTest
+    do {
+      try parsePropertyIfPresent(yaml, "only_test") {
+        guard let value = $0.bool else {
+          throw ParsingError(message: "Dependency only_test property must be a boolean") }
+
+        dep.onlyTest = value
+      }
     }
+    catch { return error as? ParsingError }
 
     dependencies.append(dep)
+    return nil
   }
 
   func parseTestTarget(yaml: Yaml) -> ParsingError? {
