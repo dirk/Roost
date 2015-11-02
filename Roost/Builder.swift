@@ -33,6 +33,7 @@ class Builder {
   var roostfile: Roostfile           { return package.roostfile }
   var vendorDirectory: String        { return package.vendorDirectory }
   var frameworkSearchPaths: [String] { return roostfile.frameworkSearchPaths }
+  var platform: Platform             { return roostfile.targetPlatform }
 
   init(_ aPackage: Package) {
     package = aPackage
@@ -455,7 +456,7 @@ class Builder {
       "-syslibroot", getSDKPath(), "-lSystem",
       "-L",     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
       "-rpath", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
-      "-macosx_version_min", "10.11.0",
+      "-macosx_version_min", platform.versionMin,
       "-no_objc_category_merging",
     ])
 

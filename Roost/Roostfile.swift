@@ -35,19 +35,20 @@ enum TargetType: CustomStringConvertible {
 class Roostfile {
   var name: String!
   var directory: String!
-  var sources                 = [String]()
-  var frameworkSearchPaths    = [String]()
-  var compilerOptions         = ""
-  var linkerOptions           = ""
-  var precompileCommands      = [String]()
-  var modules                 = Dictionary<String, Roostfile.Module>()
-  var dependencies            = Array<Roostfile.Dependency>()
-  var targetType: TargetType  = .Unknown
+  var sources                  = [String]()
+  var frameworkSearchPaths     = [String]()
+  var compilerOptions          = ""
+  var linkerOptions            = ""
+  var precompileCommands       = [String]()
+  var modules                  = Dictionary<String, Roostfile.Module>()
+  var dependencies             = Array<Roostfile.Dependency>()
+  var targetType: TargetType   = .Unknown
+  var targetPlatform: Platform = MacOSXv10_11
   var testTarget: TestTarget?
   var testCompilerOptions: String = ""
   var testLinkerOptions: String   = ""
 
-  struct ParsingError {
+  struct ParsingError: ErrorType {
     let message: String
   }
 

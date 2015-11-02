@@ -41,7 +41,7 @@ class CompileOptions {
       arguments.appendContentsOf(extraArguments)
     }
 
-    arguments.appendContentsOf(["-target", "x86_64-apple-darwin14.4.0", "-enable-objc-interop"])
+    arguments.appendContentsOf(["-target", builder.platform.targetName, "-enable-objc-interop"])
     arguments.appendContentsOf(["-sdk", getSDKPath()])
     arguments.appendContentsOf(["-F", "\(getSDKPlatformPath())/Developer/Library/Frameworks"])
 
